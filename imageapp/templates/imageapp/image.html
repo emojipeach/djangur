@@ -1,0 +1,60 @@
+{% extends 'imageapp/base.html' %}
+
+{% block content %}
+
+
+<div class="img-title">
+  {{ current_image.title }}
+</div>
+
+<div>
+  <img class="main-image" src="{{ current_image.image_file.url }}" alt="{{ current_image.title }}" >
+</div>
+
+<img class="" src="{{ current_image.thumbnail.url }}" alt="{{ current_image.title }}" >
+
+<div class="filesize">
+  {{ filesize }}
+</div>
+
+<div class="uploaded_time">
+  {{ date_time }}
+</div>
+
+
+<!-- JS for copy to clipboard -->
+
+
+    <script>
+    var clipboard = new ClipboardJS('.btn');
+    clipboard.on('success', function(e) {
+        e.trigger.textContent = 'Copied';
+    });
+    clipboard.on('error', function(e) {
+        console.log(e);
+    });
+    </script>
+
+<div>
+  <font class="clipboard-titles">Link:</font><br>
+  <input id="page-link" type="text" value="{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:image' current_image.identifier %}">
+  <button class="btn" data-clipboard-action="copy" data-clipboard-target="#page-link">Copy</button>
+</div>
+
+<div>
+  <font class="clipboard-titles">Direct Link:</font><br>
+  <input id="direct-link" type="text" value="{{ absolute_file_url }}">
+  <button class="btn" data-clipboard-action="copy" data-clipboard-target="#direct-link">Copy</button>
+</div>
+
+<div>
+  <font class="clipboard-titles">Reddit Markdown:</font><br>
+  <input id="reddit-markdown" type="text" value="[{{ filename }}]({% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:image' current_image.identifier %})">
+  <button class="btn" data-clipboard-action="copy" data-clipboard-target="#reddit-markdown">Copy</button>
+</div>
+
+<div>
+  <a href="{% url 'imageapp:index' %}">Return home</a>
+</div>
+
+{% endblock %}
