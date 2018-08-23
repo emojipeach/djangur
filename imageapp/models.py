@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import os.path
+import logging
 
 from django.db import models
 from time import time
@@ -9,64 +10,95 @@ from PIL import Image, ExifTags
 from io import BytesIO
 from django.core.files.base import ContentFile
 from datetime import datetime
-from base64 import b64encode
 from hashlib import md5
 
-from .settings import thumb_size
+from .settings import thumb_size, image_quality_val
 
-
-def directory_path(instance, filename):
+def get_folder_filename_ext(instance, filename):
+    new_folder = str(md5(str(datetime.fromtimestamp(time()).strftime("%d%m%Y").encode('utf-8')).encode('utf-8')).hexdigest())[2:8]
+    new_filename = instance.identifier[0:16]
     ext = filename.split('.')[-1].lower()
-    new_folder = str(b64encode(md5(str(datetime.fromtimestamp(time()).strftime("%d%m%Y").encode('utf-8')).encode('utf-8')).hexdigest().encode('utf-8')))[2:8]
-    new_filename = str(b64encode(str(instance.identifier).encode('utf-8')))[2:10]
+    return (new_folder, new_filename, ext)
+
+
+def image_path(instance, filename):
+    path_tuple = get_folder_filename_ext(instance, filename)
+    new_folder = path_tuple[0]
+    new_filename = path_tuple[1]
+    ext = path_tuple[2]
     return '{0}/{1}.{2}'.format(new_folder, new_filename, ext)
 
-def thumb_directory_path(instance, filename):
-    ext = filename.split('.')[-1]
-    new_folder = str(b64encode(md5(str(datetime.fromtimestamp(time()).strftime("%d%m%Y").encode('utf-8')).encode('utf-8')).hexdigest().encode('utf-8')))[2:8]
-    new_filename = str(b64encode(str(instance.identifier).encode('utf-8')))[2:10]
+def thumb_path(instance, filename):
+    path_tuple = get_folder_filename_ext(instance, filename)
+    new_folder = path_tuple[0]
+    new_filename = path_tuple[1]
+    ext = path_tuple[2]
     return '{0}/{1}_thumb.{2}'.format(new_folder, new_filename, ext)
 
 class ImageUpload(models.Model):
     identifier = models.CharField(max_length=32, primary_key=True)
     uploaded_time = models.FloatField(unique=True, default=time)
     title = models.CharField(max_length=50, blank=True)
-    image_file = models.ImageField(upload_to=directory_path)
-    thumbnail = models.ImageField(upload_to=thumb_directory_path, blank=True, editable=False)
+    image_file = models.ImageField(upload_to=image_path)
+    thumbnail = models.ImageField(upload_to=thumb_path, blank=True, editable=False)
 
     def save(self, *args, **kwargs):
-        if not self.make_thumbnail():
-            # set to a default thumbnail
-            raise Exception('Could not create thumbnail - is the file type valid?')
+        if not self.strip_exif_make_thumb():
+            raise Exception('Not a valid image (jpg, gif, png) file type')
         super(ImageUpload, self).save(*args, **kwargs)
     
-    def make_thumbnail(self):
+    def strip_exif_make_thumb(self):
         image = Image.open(self.image_file)
-        image.thumbnail(thumb_size, Image.ANTIALIAS)
         
-        thumb_name, thumb_extension = os.path.splitext(self.image_file.name)
+        image_name, image_extension = os.path.splitext(self.image_file.name)
         
-        thumb_extension = thumb_extension.lower()
-
-        thumb_filename = thumb_name + '_thumb' + thumb_extension
-
-        if thumb_extension in ['.jpg', '.jpeg']:
-            FTYPE = 'JPEG'
-        elif thumb_extension == '.gif':
-            FTYPE = 'GIF'
-        elif thumb_extension == '.png':
-            FTYPE = 'PNG'
+        image_extension = image_extension.lower()
+        if image_extension in ['.jpg', '.jpeg']:
+            file_type = 'JPEG'
+        elif image_extension == '.gif':
+            file_type = 'GIF'
+        elif image_extension == '.png':
+            file_type = 'PNG'
         else:
             return False    # Unrecognized file type
-
-        # Save thumbnail to in-memory file as StringIO
-        temp_thumb = BytesIO()
-        image.save(temp_thumb, FTYPE)
-        temp_thumb.seek(0)
-
-        # set save=False, otherwise it will run in an infinite loop
-        self.thumbnail.save(thumb_filename, ContentFile(temp_thumb.read()), save=False)
-        temp_thumb.close()
-
-        return True
-
+        try:
+            if hasattr(image, '_getexif'): # only present in JPEGs
+                for orientation in ExifTags.TAGS.keys(): 
+                    if ExifTags.TAGS[orientation]=='Orientation':
+                        break 
+                e = image._getexif()       # returns None if no EXIF data
+                if e is not None:
+                    exif=dict(e.items())
+                    orientation = exif[orientation] 
+                    if orientation == 2:
+                        image = image.transpose(Image.FLIP_LEFT_RIGHT)
+                    elif orientation == 3:
+                        image = image.transpose(Image.ROTATE_180)
+                    elif orientation == 4:
+                        image = image.transpose(Image.FLIP_TOP_BOTTOM)
+                    elif orientation == 5:
+                        image = image.transpose(Image.FLIP_LEFT_RIGHT, Image.ROTATE_90)
+                    elif orientation == 6:
+                        image = image.transpose(Image.ROTATE_270)
+                    elif orientation == 7:
+                        image = image.transpose(Image.FLIP_TOP_BOTTOM, Image.ROTATE_90)
+                    elif orientation == 8:
+                        image = image.transpose(Image.ROTATE_90)
+                    else:
+                        pass
+        except Exception:
+            logging.info('There was an error dealing with EXIF data when trying to reorientate')
+        finally:
+            temp_image = BytesIO()
+            image.save(temp_image, file_type, quality=image_quality_val)
+            temp_image.seek(0)
+            self.image_file.save(self.image_file.name, ContentFile(temp_image.read()), save=False)
+            temp_image.close()
+            image.thumbnail(thumb_size, Image.ANTIALIAS)
+            temp_thumb = BytesIO()
+            image.save(temp_thumb, file_type)
+            temp_thumb.seek(0)
+            self.thumbnail.save(self.image_file.name, ContentFile(temp_thumb.read()), save=False)
+            temp_thumb.close()
+            
+            return True
