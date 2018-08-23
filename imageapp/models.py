@@ -5,12 +5,14 @@ import os.path
 
 from django.db import models
 from time import time
-from PIL import Image
+from PIL import Image, ExifTags
 from io import BytesIO
 from django.core.files.base import ContentFile
 from datetime import datetime
 from base64 import b64encode
 from hashlib import md5
+
+from .settings import thumb_size
 
 
 def directory_path(instance, filename):
@@ -31,7 +33,6 @@ class ImageUpload(models.Model):
     title = models.CharField(max_length=50, blank=True)
     image_file = models.ImageField(upload_to=directory_path)
     thumbnail = models.ImageField(upload_to=thumb_directory_path, blank=True, editable=False)
-#    uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
         if not self.make_thumbnail():
@@ -40,9 +41,8 @@ class ImageUpload(models.Model):
         super(ImageUpload, self).save(*args, **kwargs)
     
     def make_thumbnail(self):
-        THUMB_SIZE = (160, 160)
         image = Image.open(self.image_file)
-        image.thumbnail(THUMB_SIZE, Image.ANTIALIAS)
+        image.thumbnail(thumb_size, Image.ANTIALIAS)
         
         thumb_name, thumb_extension = os.path.splitext(self.image_file.name)
         
@@ -70,4 +70,3 @@ class ImageUpload(models.Model):
 
         return True
 
-    
