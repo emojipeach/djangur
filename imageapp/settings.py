@@ -2,4 +2,4 @@
 image_quality_val = 75
 
 """ Set the size of generated thumbnails (width, height)."""
-thumb_size = (160, 160)
+thumb_size = (320, 320)
