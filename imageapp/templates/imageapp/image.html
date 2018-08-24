@@ -8,10 +8,10 @@
 </div>
 
 <div>
-  <img class="main-image" src="{{ current_image.image_file.url }}" alt="{{ current_image.title }}" >
+  <a href="{{ current_image.image_file.url }}">
+  <img class="main-image" src="{{ current_image.thumbnail.url }}" alt="{{ current_image.title }}" >
+  </a>
 </div>
-
-<img class="" src="{{ current_image.thumbnail.url }}" alt="{{ current_image.title }}" >
 
 <div class="filesize">
   {{ filesize }}
@@ -25,15 +25,15 @@
 <!-- JS for copy to clipboard -->
 
 
-    <script>
-    var clipboard = new ClipboardJS('.btn');
-    clipboard.on('success', function(e) {
-        e.trigger.textContent = 'Copied';
-    });
-    clipboard.on('error', function(e) {
-        console.log(e);
-    });
-    </script>
+<script>
+var clipboard = new ClipboardJS('.btn');
+clipboard.on('success', function(e) {
+    e.trigger.textContent = 'Copied';
+});
+clipboard.on('error', function(e) {
+    console.log(e);
+});
+</script>
 
 <div>
   <font class="clipboard-titles">Link:</font><br>
