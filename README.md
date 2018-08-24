@@ -2,7 +2,7 @@
 
 Intended to be an open source privacy focussed image hosting script. Currently at a very early stage.
 
-###Implemented:
+### Implemented:
 * Basic upload form
 * Basic image view
 * Image filename unique and unguessable
@@ -12,7 +12,7 @@ Intended to be an open source privacy focussed image hosting script. Currently a
 * 'Copy' buttons (needs js)
 * Display filesize
     
-###Todo:
+### Todo:
 * Handle gifs outside PIL
 * Function basic documentation
 * Unittests
@@ -24,7 +24,7 @@ Intended to be an open source privacy focussed image hosting script. Currently a
 * Image reporting / moderation
 * Main view with recent (non-private) uploads
 
-###Maybe:
+### Maybe:
 * Karma
 * Decay
 * Categories
