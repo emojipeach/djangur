@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 import os.path
-import logging
 
 from django.db import models
 from time import time
@@ -16,10 +15,9 @@ from .settings import thumb_size, image_quality_val, expiry_choices
 
 def get_folder_filename_ext(instance, filename):
     new_folder = str(md5(str(datetime.fromtimestamp(time()).strftime("%d%m%Y").encode('utf-8')).encode('utf-8')).hexdigest())[2:8]
-    new_filename = instance.identifier[0:16]
+    new_filename = instance.identifier
     ext = filename.split('.')[-1].lower()
     return (new_folder, new_filename, ext)
-
 
 def image_path(instance, filename):
     path_tuple = get_folder_filename_ext(instance, filename)
@@ -97,18 +95,20 @@ class ImageUpload(models.Model):
                     else:
                         pass
         except Exception:
-            logging.info('There was an error dealing with EXIF data when trying to reorientate')
+            print('There was an error dealing with EXIF data when trying to reorientate')
         finally:
-            temp_image = BytesIO()
-            image.save(temp_image, file_type, quality=image_quality_val)
-            temp_image.seek(0)
-            self.image_file.save(self.image_file.name, ContentFile(temp_image.read()), save=False)
-            temp_image.close()
+            if file_type in ('JPEG', 'PNG'): # this prevents processing of (animated) gifs
+                temp_image = BytesIO()
+                image.save(temp_image, file_type, quality=image_quality_val)
+                temp_image.seek(0)
+                self.image_file.save(self.image_file.name, ContentFile(temp_image.read()), save=False)
+                temp_image.close()
+            
+            # Evaluation and processing of animated gif thumbnails should go here
             image.thumbnail(thumb_size, Image.ANTIALIAS)
             temp_thumb = BytesIO()
             image.save(temp_thumb, file_type)
             temp_thumb.seek(0)
             self.thumbnail.save(self.image_file.name, ContentFile(temp_thumb.read()), save=False)
             temp_thumb.close()
-            
             return True
