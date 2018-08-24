@@ -9,10 +9,10 @@ from time import time
 from PIL import Image, ExifTags
 from io import BytesIO
 from django.core.files.base import ContentFile
-from datetime import datetime
+from datetime import datetime, timedelta
 from hashlib import md5
 
-from .settings import thumb_size, image_quality_val
+from .settings import thumb_size, image_quality_val, expiry_choices
 
 def get_folder_filename_ext(instance, filename):
     new_folder = str(md5(str(datetime.fromtimestamp(time()).strftime("%d%m%Y").encode('utf-8')).encode('utf-8')).hexdigest())[2:8]
@@ -37,15 +37,25 @@ def thumb_path(instance, filename):
 
 class ImageUpload(models.Model):
     identifier = models.CharField(max_length=32, primary_key=True)
-    uploaded_time = models.FloatField(unique=True, default=time)
+    uploaded_time = models.FloatField(default=time)
     title = models.CharField(max_length=50, blank=True)
     image_file = models.ImageField(upload_to=image_path)
     thumbnail = models.ImageField(upload_to=thumb_path, blank=True, editable=False)
+    expiry_choice = models.IntegerField(choices=expiry_choices)
+    expiry_time = models.FloatField()
 
     def save(self, *args, **kwargs):
         if not self.strip_exif_make_thumb():
             raise Exception('Not a valid image (jpg, gif, png) file type')
+        if not self.get_expiry_time():
+            raise Exception('An error occurred when processing the expiry date')
         super(ImageUpload, self).save(*args, **kwargs)
+    
+    def get_expiry_time(self):
+        original = datetime.fromtimestamp(time())
+        expiry = original + timedelta(days=self.expiry_choice)
+        self.expiry_time = expiry.timestamp()
+        return True
     
     def strip_exif_make_thumb(self):
         image = Image.open(self.image_file)
