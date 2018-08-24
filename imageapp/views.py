@@ -3,10 +3,10 @@ from __future__ import unicode_literals
 
 from re import search as regex_search
 from django.shortcuts import render
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.urls import reverse
 from uuid import uuid4
-from time import strftime, localtime
+from time import strftime, localtime, time
 
 from .forms import ImageUploadForm
 from .models import ImageUpload
@@ -48,20 +48,23 @@ def index(request):
 def image(request, identifier):
     current_image = ImageUpload.objects.get(identifier=identifier)
     
+    if current_image.expiry_time < time() and current_image.expiry_time > current_image.uploaded_time:
+        raise Http404("Page not found")
+    
     absolute_file_url = request.build_absolute_uri(current_image.image_file.url)
     
     filename = get_folder_filename(current_image)[1]
     
     filesize = get_filesize(current_image)
     
-    date_time = strftime('%b. %d, %Y, %-I:%M %p', localtime(current_image.uploaded_time))
+    uploaded_display_time = strftime('%b. %d, %Y, %-I:%M %p', localtime(current_image.uploaded_time))
     
     context = {
         'filesize': filesize,
         'filename': filename,
         'current_image': current_image,
         'absolute_file_url': absolute_file_url,
-        'date_time': date_time,
+        'uploaded_display_time': uploaded_display_time,
     }
     return render(request, 'imageapp/image.html', context)
 
