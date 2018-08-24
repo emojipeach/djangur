@@ -4,4 +4,7 @@ from .models import ImageUpload
 class ImageUploadForm(forms.ModelForm):
     class Meta:
         model = ImageUpload
-        fields = ('title', 'image_file', )
+        fields = (
+        'title',
+        'image_file', 'expiry_choice',
+        )
