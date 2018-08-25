@@ -21,6 +21,7 @@ def get_folder_filename(instance):
     return (folder, filename)
 
 def get_filesize(instance):
+    """ Returns a formatted string for use in templates from the image.size attribute provided in bytes."""
     size_bytes = instance.image_file.size
     if size_bytes > 1048576:
         result = "{0:.2f}".format(size_bytes / 1048576) + " MB"
@@ -36,6 +37,7 @@ def index(request):
         if form.is_valid():
             new_image = form.save(commit=False)
             new_image.identifier = uuid4().hex
+            new_image.uploaded_time = time()
             new_image.save()
             return HttpResponseRedirect(reverse('imageapp:image', args=[new_image.identifier]))
     else:
