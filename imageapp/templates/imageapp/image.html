@@ -14,12 +14,18 @@
 </div>
 
 <div class="filesize">
-  {{ filesize }}
+  {{ current_image.formatted_filesize }}
 </div>
 
 <div class="uploaded_time">
-  {{ uploaded_display_time }}
+  {{ current_image.formatted_uploaded_time }}
 </div>
+
+<div class ="expiry">
+  {{ current_image.formatted_expiry_delta }}
+</div>
+
+
 
 <!-- JS for copy to clipboard -->
 
@@ -48,7 +54,7 @@ clipboard.on('error', function(e) {
 
 <div>
   <font class="clipboard-titles">Reddit Markdown:</font><br>
-  <input id="reddit-markdown" type="text" value="[{{ filename }}]({% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:image' current_image.identifier %})">
+  <input id="reddit-markdown" type="text" value="[{{ current_image.filename }}]({% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:image' current_image.identifier %})">
   <button class="btn" data-clipboard-action="copy" data-clipboard-target="#reddit-markdown">Copy</button>
 </div>
 
