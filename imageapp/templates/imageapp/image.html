@@ -60,8 +60,8 @@ clipboard.on('error', function(e) {
 
 <div>
   <font class="clipboard-titles">Delete Image Link:</font><br>
-  <input id="page-link" type="text" value="{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:delete_image' current_image.identifier current_image.deletion_password %}">
-  <button class="btn" data-clipboard-action="copy" data-clipboard-target="#page-link">Copy</button>
+  <input id="deletion-link" type="text" value="{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:delete_image' current_image.identifier current_image.deletion_password %}">
+  <button class="btn" data-clipboard-action="copy" data-clipboard-target="#deletion-link">Copy</button>
 </div>
 
 {% else %}
