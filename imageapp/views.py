@@ -24,7 +24,16 @@ def index(request):
             new_image.identifier = uuid4().hex
             new_image.uploaded_time = time()
             new_image.save()
-            return HttpResponseRedirect(reverse('imageapp:image', args=[new_image.identifier, new_image.upload_success_password()]))
+            
+            absolute_file_url = request.build_absolute_uri(new_image.image_file.url)
+            
+            context = {
+                'current_image': new_image,
+                'absolute_file_url': absolute_file_url,
+                'attempted_upload_success_password': new_image.upload_success_password(),
+            }
+            
+            return render(request, 'imageapp/image.html', context)
     else:
         form = ImageUploadForm()
     context = {
@@ -59,9 +68,10 @@ def delete_image(request, identifier, deletion_password=''):
     filename = current_image.filename
     
     if deletion_password == current_image.deletion_password():
-        current_image.delete()
         os.remove(current_image.image_file.path)
         os.remove(current_image.thumbnail.path)
+        
+        current_image.delete()
         
         context ={
             'filename': filename,
