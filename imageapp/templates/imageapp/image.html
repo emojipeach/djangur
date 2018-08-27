@@ -25,8 +25,6 @@
   {{ current_image.formatted_expiry_delta }}
 </div>
 
-
-
 <!-- JS for copy to clipboard -->
 
 
@@ -57,6 +55,18 @@ clipboard.on('error', function(e) {
   <input id="reddit-markdown" type="text" value="[{{ current_image.filename }}]({% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:image' current_image.identifier %})">
   <button class="btn" data-clipboard-action="copy" data-clipboard-target="#reddit-markdown">Copy</button>
 </div>
+
+{% if attempted_upload_success_password == current_image.upload_success_password %}
+
+<div>
+  <font class="clipboard-titles">Delete Image Link:</font><br>
+  <input id="page-link" type="text" value="{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:delete_image' current_image.identifier current_image.deletion_password %}">
+  <button class="btn" data-clipboard-action="copy" data-clipboard-target="#page-link">Copy</button>
+</div>
+
+{% else %}
+
+{% endif %}
 
 <div>
   <a href="{% url 'imageapp:index' %}">Return home</a>
