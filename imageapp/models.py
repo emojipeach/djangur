@@ -15,25 +15,14 @@ from .settings import thumb_size, image_quality_val, expiry_choices
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s')
 
-def get_folder_filename_ext(instance, filename):
+def image_path(instance, filename):
     new_folder = str(md5(str(datetime.fromtimestamp(instance.uploaded_time).strftime("%d%m%Y").encode('utf-8')).encode('utf-8')).hexdigest())[2:8]
     new_filename = instance.identifier
     ext = filename.split('.')[-1].lower()
-    return (new_folder, new_filename, ext)
-
-def image_path(instance, filename):
-    path_tuple = get_folder_filename_ext(instance, filename)
-    new_folder = path_tuple[0]
-    new_filename = path_tuple[1]
-    ext = path_tuple[2]
-    return '{0}/{1}.{2}'.format(new_folder, new_filename, ext)
-
-def thumb_path(instance, filename):
-    path_tuple = get_folder_filename_ext(instance, filename)
-    new_folder = path_tuple[0]
-    new_filename = path_tuple[1]
-    ext = path_tuple[2]
-    return '{0}/{1}_thumb.{2}'.format(new_folder, new_filename, ext)
+    if filename.split('.')[0] == 'thumbnail':
+        return '{0}/{1}_thumb.{2}'.format(new_folder, new_filename, ext)
+    else:
+        return '{0}/{1}.{2}'.format(new_folder, new_filename, ext)
 
 def image_is_animated_gif(image, image_format):
     """ Checks whether an image is an animated gif by trying to seek beyond the initial frame. """
@@ -78,7 +67,7 @@ class ImageUpload(models.Model):
     uploaded_time = models.FloatField()
     title = models.CharField(max_length=50, blank=True)
     image_file = models.ImageField(upload_to=image_path)
-    thumbnail = models.ImageField(upload_to=thumb_path, blank=True, editable=False)
+    thumbnail = models.ImageField(upload_to=image_path, blank=True, editable=False)
     expiry_choice = models.IntegerField(choices=expiry_choices)
     private = models.BooleanField()
 
@@ -173,10 +162,14 @@ class ImageUpload(models.Model):
                 temp_image.close()
             
             # Evaluation and processing of animated gif thumbnails should go here
+            
+            ext = self.filename().split('.')[-1].lower()
+            
+            thumbnail_placefolder = "thumbnail.{0}".format(ext)
             image.thumbnail(thumb_size, Image.ANTIALIAS)
             temp_thumb = BytesIO()
             image.save(temp_thumb, file_type, quality=image_quality_val)
             temp_thumb.seek(0)
-            self.thumbnail.save(self.image_file.name, ContentFile(temp_thumb.read()), save=False)
+            self.thumbnail.save(thumbnail_placefolder, ContentFile(temp_thumb.read()), save=False)
             temp_thumb.close()
             return True
