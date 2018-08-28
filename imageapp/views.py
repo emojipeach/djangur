@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import os
 import logging
+import os
 
-from django.shortcuts import render
-from django.http import HttpResponseRedirect, Http404
-from django.conf import settings
-from django.urls import reverse
-from uuid import uuid4
 from time import time
+from uuid import uuid4
 
-from .forms import ImageUploadForm
-from .models import ImageUpload
+from django.http import HttpResponseRedirect
+from django.http import Http404
+from django.shortcuts import render
+from django.urls import reverse
+
+from imageapp.forms import ImageUploadForm
+from imageapp.models import ImageUpload
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s')
 
@@ -41,7 +42,7 @@ def index(request):
     }
     return render(request, 'imageapp/index.html', context)
 
-def image(request, identifier, upload_success_password=''):
+def image(request, identifier):
     try:
         current_image = ImageUpload.objects.get(identifier=identifier)
     except Exception:
@@ -55,7 +56,6 @@ def image(request, identifier, upload_success_password=''):
     context = {
         'current_image': current_image,
         'absolute_file_url': absolute_file_url,
-        'attempted_upload_success_password': upload_success_password,
     }
     return render(request, 'imageapp/image.html', context)
 
@@ -65,14 +65,11 @@ def delete_image(request, identifier, deletion_password=''):
     except Exception:
         raise Http404("Page not found")
     
-    filename = current_image.filename
-    
     if deletion_password == current_image.deletion_password():
+        filename = current_image.filename
         os.remove(current_image.image_file.path)
         os.remove(current_image.thumbnail.path)
-        
         current_image.delete()
-        
         context ={
             'filename': filename,
         }
