@@ -1,17 +1,25 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import os
-from time import strftime, localtime, time
-from django.db import models
-from PIL import Image, ExifTags
-from io import BytesIO
-from django.core.files.base import ContentFile
-from datetime import datetime, timedelta
-from hashlib import md5
 import logging
+import os
 
-from .settings import thumb_size, image_quality_val, expiry_choices
+from datetime import datetime
+from datetime import timedelta
+from hashlib import md5
+from io import BytesIO
+from PIL import ExifTags
+from PIL import Image
+from time import localtime
+from time import strftime
+from time import time
+
+from django.core.files.base import ContentFile
+from django.db import models
+
+from imageapp.settings import expiry_choices
+from imageapp.settings import image_quality_val
+from imageapp.settings import thumb_size
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s')
 
@@ -26,7 +34,7 @@ def image_path(instance, filename):
 
 def image_is_animated_gif(image, image_format):
     """ Checks whether an image is an animated gif by trying to seek beyond the initial frame. """
-    if image_format != 'gif':
+    if image_format != 'GIF':
         return False
     try:
         image.seek(1)
@@ -138,33 +146,26 @@ class ImageUpload(models.Model):
     def strip_exif_make_thumb(self):
         image = Image.open(self.image_file)
         
-        image_format = image.format.lower()
+        file_type = image.format.upper()
         
-        if image_format in ['jpg', 'jpeg']:
-            file_type = 'JPEG'
-        elif image_format == 'gif':
-            file_type = 'GIF'
-        elif image_format == 'png':
-            file_type = 'PNG'
-        else:
-             raise Exception('Unrecognized file type')
         try:
             image = reorientate_image(image)
         except Exception:
             logging.info('There was an error dealing with EXIF data when trying to reorientate')
         finally:
-            if image_is_animated_gif(image, image_format) == False:
-                # if True the unprocessed gif will still be saved
+            if image_is_animated_gif(image, file_type) == True:
+                pass
+                # Animated gifs are not processed before being saved
+            else:
                 temp_image = BytesIO()
                 image.save(temp_image, file_type, quality=image_quality_val)
                 temp_image.seek(0)
                 self.image_file.save(self.image_file.name, ContentFile(temp_image.read()), save=False)
                 temp_image.close()
             
-            # Evaluation and processing of animated gif thumbnails should go here
-            
+            # TODO Evaluation and processing of animated gif thumbnails
+                
             ext = self.filename().split('.')[-1].lower()
-            
             thumbnail_placefolder = "thumbnail.{0}".format(ext)
             image.thumbnail(thumb_size, Image.ANTIALIAS)
             temp_thumb = BytesIO()
@@ -172,4 +173,5 @@ class ImageUpload(models.Model):
             temp_thumb.seek(0)
             self.thumbnail.save(thumbnail_placefolder, ContentFile(temp_thumb.read()), save=False)
             temp_thumb.close()
+ 
             return True
