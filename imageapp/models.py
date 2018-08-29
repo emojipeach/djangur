@@ -77,6 +77,7 @@ class ImageUpload(models.Model):
     image_file = models.ImageField(upload_to=image_path)
     thumbnail = models.ImageField(upload_to=image_path, blank=True, editable=False)
     expiry_choice = models.IntegerField(choices=expiry_choices)
+    expiry_time = models.FloatField()
     private = models.BooleanField()
 
     def save(self, *args, **kwargs):
@@ -108,14 +109,14 @@ class ImageUpload(models.Model):
         result = "Uploaded at " + strftime('%b. %d, %Y, %-I:%M %p', localtime(self.uploaded_time))
         return result
     
-    def expiry_time(self):
+    def get_expiry_time(self):
         uploaded = datetime.fromtimestamp(self.uploaded_time)
         expiry = uploaded + timedelta(days=self.expiry_choice)
         result = expiry.timestamp()
         return result
     
     def formatted_expiry_delta(self):
-        et = self.expiry_time()
+        et = self.expiry_time
         ut = self.uploaded_time
         if et < ut:
             return 'Never expires'
