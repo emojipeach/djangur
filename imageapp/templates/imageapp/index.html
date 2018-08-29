@@ -2,14 +2,24 @@
 
 {% block content %}
 
-<form method="post" enctype="multipart/form-data">
-  
-    {% csrf_token %}
-    {{ form.as_p }}
-    
-    <button type="submit">Upload</button>
-    
-</form>
+<div>
+  Most recent images
+</div>
+
+{% for image in images %}
+
+<div>
+  <a href="{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:image' image.identifier %}">
+  <img class="index-thumbnail" src="{{ image.thumbnail.url }}" alt="{{ image.title }}" >
+  </a>
+</div>
+<br>
+
+{% endfor %}
+
+<div>
+  <a href="{% url 'imageapp:upload' %}">Upload a new image</a>
+</div>
 
 <div>
   <a href="{% url 'imageapp:index' %}">Return home</a>
