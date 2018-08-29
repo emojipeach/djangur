@@ -5,19 +5,19 @@ Intended to be an open source privacy focussed image hosting script. Currently a
 ### Implemented:
 * Basic upload form
 * Basic image view
+* Basic index with recent (non-private) images
 * Image filename unique and unguessable
 * EXIF stripping with orientation correction for jpegs
 * Make thumbnails
-* Image expiry (still needs file delete script)
+* Image expiry with image delete script running hourly by default
 * 'Copy' buttons
 * Display filesize and expiry delta
 * Accepts animated gifs (thumbnail not animated currently)
-* Image privacy checkbox
+* Image privacy option
 * Added some upload form defaults
 * Added image deletion link and view with basic success template
     
 ### Todo:
-* Main view with recent (non-private) uploads
 * Image reporting / moderation
 * 
 * Function basic documentation
@@ -25,10 +25,10 @@ Intended to be an open source privacy focussed image hosting script. Currently a
 * 
 * User account handling
 * Anon uploads
-* 
-* Animate gif thumbnails (will need pillow) as described here: https://github.com/python-pillow/pillow-scripts/blob/master/Scripts/gifmaker.py
+* Upload from URL
 
 ### Maybe:
 * Karma
 * Decay
 * Categories
+* Animate gif thumbnails 
