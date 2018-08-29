@@ -1,8 +1,8 @@
 """ Sets the quality % value used to save an image. Default = 75."""
-image_quality_val = 75
+image_quality_val = 5
 
 """ Set the size of generated thumbnails (width, height)."""
-thumb_size = (320, 320)
+thumb_size = (200, 200)
 
 """ Set the available expiry options."""
 expiry_choices = (
@@ -14,3 +14,6 @@ expiry_choices = (
     (365, '1 year'),
     (-10, 'Never'),
     )
+
+""" Sets the frequency at which image expiries are checked and images deleted in seconds."""
+expiry_removal_frequency = 3600
