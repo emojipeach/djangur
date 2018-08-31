@@ -44,7 +44,7 @@ clipboard.on('error', function(e) {
 
 <div>
   <font class="clipboard-titles">Direct Link:</font><br>
-  <input id="direct-link" type="text" value="{{ absolute_file_url }}">
+  <input id="direct-link" type="text" value="{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{{ current_image.image_file.url }}">
   <button class="btn" data-clipboard-action="copy" data-clipboard-target="#direct-link">Copy</button>
 </div>
 
@@ -65,6 +65,16 @@ clipboard.on('error', function(e) {
 {% else %}
 
 {% endif %}
+
+<div>
+  <a href="{% url 'imageapp:report_image' current_image.identifier %}">Report image</a>
+</div>
+
+<div>
+  This image has been reported {{ current_image.reported }} times.
+</div>
+
+{{ current_image.reported_first_time }}
 
 <div>
   <a href="{% url 'imageapp:index' %}">Return home</a>
