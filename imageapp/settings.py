@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 """ Sets the quality % value used to save an image. Default = 75."""
 image_quality_val = 5
 
@@ -17,3 +20,9 @@ expiry_choices = (
 
 """ Sets the frequency at which image expiries are checked and images deleted in seconds."""
 expiry_removal_frequency = 3600
+
+""" Sets a number of reports above which an image becomes inaccessable and is added to the moderation queue for approval or deletion."""
+moderation_threshold = 1
+
+""" When an image is moderated the counter will need to reach this number again before it is submitted for reevaluation."""
+moderation_counter_reset = 10
