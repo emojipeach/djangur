@@ -1,0 +1,37 @@
+{% extends 'imageapp/base.html' %}
+
+{% block content %}
+
+<div>
+  Image from moderation queue
+</div>
+
+<div>
+Filename
+<br>
+{{ moderate.filename }}
+<br>
+Has been reported {{ moderate.reported }} times
+</div>
+
+<div>
+  <img class="main-image" src="{{ moderate.image_file.url }}" alt="{{ moderate.title }}" >
+</div>
+
+<div>
+  <a href="{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:mod_delete_image' moderate.identifier moderate.deletion_password %}">
+  Delete Image
+  </a>
+</div>
+
+<div>
+  <a href="{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:mod_image_acceptable' moderate.identifier moderate.deletion_password %}">
+  Image Acceptable
+  </a>
+</div>
+
+<div>
+  <a href="{% url 'imageapp:index' %}">Return home</a>
+</div>
+  
+{% endblock %}
