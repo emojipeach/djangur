@@ -79,6 +79,8 @@ class ImageUpload(models.Model):
     expiry_choice = models.IntegerField(choices=expiry_choices)
     expiry_time = models.FloatField()
     private = models.BooleanField()
+    reported = models.IntegerField(default=0)
+    reported_first_time = models.FloatField(default=0)
 
     def save(self, *args, **kwargs):
         if not self.strip_exif_make_thumb():
@@ -146,6 +148,10 @@ class ImageUpload(models.Model):
     
     def strip_exif_make_thumb(self):
         image = Image.open(self.image_file)
+        
+        # if file has already been saved we dont want them to be processed/saved again
+        if os.path.isfile(self.image_file.path):
+            return True
         
         file_type = image.format.upper()
         
