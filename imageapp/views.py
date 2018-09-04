@@ -3,29 +3,41 @@ from __future__ import unicode_literals
 
 import logging
 import os
+import requests
 
+from io import BytesIO
+from PIL import Image
 from random import randint
 from time import time
+from urllib.parse import urlparse
 from uuid import uuid4
 
+from django.core.files.base import ContentFile
 from django.http import HttpResponseRedirect
 from django.http import Http404
 from django.shortcuts import render
 from django.urls import reverse
 
 from imageapp.forms import ImageUploadForm
+from imageapp.forms import ImageUploadURLForm
 from imageapp.models import ImageUpload
+from imageapp.models import image_is_animated_gif
+from imageapp.settings import image_quality_val
 from imageapp.settings import moderation_counter_reset
 from imageapp.settings import moderation_threshold
-from imageapp.startup import delete_expired_images
+# from imageapp.startup import delete_expired_images
 
-logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s'
+    )
+
 
 def index(request):
     """ Default index view which displays some recent images."""
     images = ImageUpload.objects.filter(private=False).order_by('-uploaded_time')[:5]
     context = {'images': images}
     return render(request, 'imageapp/index.html', context)
+
 
 def upload(request):
     """ View for the image upload form."""
@@ -39,8 +51,8 @@ def upload(request):
             new_image.save()
             
             context = {
-                'current_image': new_image,
-                'attempted_upload_success_password': new_image.upload_success_password(),
+            'current_image': new_image,
+            'attempted_upload_success_password': new_image.upload_success_password(),
             }
             
             return render(request, 'imageapp/image.html', context)
@@ -51,12 +63,15 @@ def upload(request):
     }
     return render(request, 'imageapp/upload.html', context)
 
+
 def image(request, identifier):
+    """ View which displays an image referenced by the identifier."""
     try:
         current_image = ImageUpload.objects.get(identifier=identifier)
     except Exception:
         raise Http404("Page not found")
     
+    # Lets check if the image.reported field exceeds the moderation threshold
     if current_image.reported >= moderation_threshold:
         message = 'Image awaiting moderation'
         context = {
@@ -64,7 +79,7 @@ def image(request, identifier):
         }
         return render(request, 'imageapp/result.html', context)
         
-    
+    # Lets check if the image has expired and is awaiting deletion
     if current_image.expiry_time < time() and current_image.expiry_time > current_image.uploaded_time:
         raise Http404("Page not found")
     
@@ -73,12 +88,16 @@ def image(request, identifier):
     }
     return render(request, 'imageapp/image.html', context)
 
+
 def delete_image(request, identifier, deletion_password=''):
+    """ View to delete an image, a correct deletion password must be passed in the url."""
     try:
         current_image = ImageUpload.objects.get(identifier=identifier)
     except Exception:
         raise Http404("Page not found")
+    # Lets check the deletion password is correct
     if deletion_password == current_image.deletion_password():
+        # If so we need to delete the instance and all associated files
         message = current_image.filename() + ' deleted'
         os.remove(current_image.image_file.path)
         os.remove(current_image.thumbnail.path)
@@ -91,11 +110,14 @@ def delete_image(request, identifier, deletion_password=''):
     else:
         raise Http404("Page not found")
 
+
 def report_image(request, identifier):
+    """ View that increments the image.reported count and adds a timestamp to be used for the mod_queue."""
     try:
         current_image = ImageUpload.objects.get(identifier=identifier)
     except Exception:
         raise Http404("Page not found")
+    # TODO should add some session checking to limt multiple reports
     current_image.reported += 1
     if current_image.reported_first_time == 0:
         current_image.reported_first_time = time()
@@ -107,7 +129,9 @@ def report_image(request, identifier):
         }
     return render(request, 'imageapp/result.html', context)
 
+
 def mod_delete_image(request, identifier, deletion_password=''):
+    """ View called from the mod_queue template which deletes an image and redirects back to the queue."""
     try:
         current_image = ImageUpload.objects.get(identifier=identifier)
     except Exception:
@@ -122,7 +146,9 @@ def mod_delete_image(request, identifier, deletion_password=''):
     else:
         raise Http404("Page not found")
 
+
 def mod_image_acceptable(request, identifier, deletion_password=''):
+    """ View which resets the image.reported counter."""
     try:
         current_image = ImageUpload.objects.get(identifier=identifier)
     except Exception:
@@ -139,9 +165,11 @@ def mod_image_acceptable(request, identifier, deletion_password=''):
         
 
 def mod_queue(request):
-    # get 10 images above moderation_threshold and sort by the first time they were reported
-    images_for_moderation = ImageUpload.objects.filter(reported__gte=moderation_threshold).order_by('-reported_first_time')[:100]
-    # pick a random image from this list to show to moderator
+    """ View gets 10 images above moderation_threshold and sort by the first time they were reported."""
+    images_for_moderation = ImageUpload.objects.filter(
+        reported__gte=moderation_threshold
+        ).order_by('-reported_first_time')[:10]
+    # Lets pick a random image from this list to show to moderator
     try:
         moderate = images_for_moderation[randint(0, len(images_for_moderation) - 1)]
     except ValueError:
@@ -155,3 +183,48 @@ def mod_queue(request):
         'moderate': moderate
     }
     return render(request, 'imageapp/mod_queue.html', context)
+
+
+def upload_from_url(request):
+    if request.method == 'POST':
+        form = ImageUploadURLForm(request.POST)
+        if form.is_valid():
+            new_image = form.save(commit=False)
+            new_image.identifier = uuid4().hex
+            new_image.uploaded_time = time()
+            new_image.expiry_time = new_image.get_expiry_time()
+            
+            img_url = form.cleaned_data['image_form_url']
+            
+            name = urlparse(img_url).path.split('/')[-1]
+            
+            response = requests.get(img_url)
+            
+            if response.status_code == 200:
+                image = Image.open(BytesIO(response.content))
+                file_type = image.format.upper()
+                
+                if image_is_animated_gif(image, file_type):
+                    new_image.image_file.save(name, ContentFile(response.content), save=True)
+                else:
+                    temp_image = BytesIO()
+                    image.save(temp_image, file_type, quality=image_quality_val)
+                    temp_image.seek(0)
+                    new_image.image_file.save(name, ContentFile(temp_image.read()), save=False)
+                    temp_image.close()
+            
+            new_image.save()
+            
+            context = {
+                'current_image': new_image,
+                'attempted_upload_success_password': new_image.upload_success_password(),
+            }
+            
+            return render(request, 'imageapp/image.html', context)
+    else:
+        form = ImageUploadURLForm()
+    context = {
+        'form': form,
+    }
+    return render(request, 'imageapp/upload.html', context)
+    
