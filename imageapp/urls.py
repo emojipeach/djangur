@@ -11,6 +11,7 @@ urlpatterns = [
     # Home page
     path('', views.index, name='index'),
     path('upload/', views.upload, name='upload'),
+    path('upload_from_url/', views.upload_from_url, name='upload_from_url'),
     path('image/<str:identifier>/', views.image, name='image'),
     path('delete_image/<str:identifier>/<str:deletion_password>/', views.delete_image, name='delete_image'),
     path('mod_delete_image/<str:identifier>/<str:deletion_password>/', views.mod_delete_image, name='mod_delete_image'),
