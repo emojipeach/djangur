@@ -23,6 +23,7 @@ from imageapp.settings import thumb_size
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s')
 
+
 def image_path(instance, filename):
     new_folder = str(md5(str(datetime.fromtimestamp(instance.uploaded_time).strftime("%d%m%Y").encode('utf-8')).encode('utf-8')).hexdigest())[2:8]
     new_filename = instance.identifier
@@ -31,6 +32,7 @@ def image_path(instance, filename):
         return '{0}/{1}_thumb.{2}'.format(new_folder, new_filename, ext)
     else:
         return '{0}/{1}.{2}'.format(new_folder, new_filename, ext)
+
 
 def image_is_animated_gif(image, image_format):
     """ Checks whether an image is an animated gif by trying to seek beyond the initial frame. """
@@ -43,15 +45,16 @@ def image_is_animated_gif(image, image_format):
     else:
         return True
 
+
 def reorientate_image(image):
-    if hasattr(image, '_getexif'): # only present in JPEGs
-        for orientation in ExifTags.TAGS.keys(): 
-            if ExifTags.TAGS[orientation]=='Orientation':
-                break 
+    if hasattr(image, '_getexif'):  # only present in JPEGs
+        for orientation in ExifTags.TAGS.keys():
+            if ExifTags.TAGS[orientation] == 'Orientation':
+                break
         e = image._getexif()       # returns None if no EXIF data
         if e is not None:
-            exif=dict(e.items())
-            orientation = exif[orientation] 
+            exif = dict(e.items())
+            orientation = exif[orientation]
             if orientation == 2:
                 image = image.transpose(Image.FLIP_LEFT_RIGHT)
             elif orientation == 3:
@@ -70,6 +73,7 @@ def reorientate_image(image):
                 pass
     return image
 
+
 class ImageUpload(models.Model):
     identifier = models.CharField(max_length=32, primary_key=True)
     uploaded_time = models.FloatField()
@@ -83,8 +87,10 @@ class ImageUpload(models.Model):
     reported_first_time = models.FloatField(default=0)
 
     def save(self, *args, **kwargs):
-        if not self.strip_exif_make_thumb():
-            raise Exception('Not a valid image (jpg, gif, png) file type')
+        if not self.process_main_image():
+            raise Exception('Not a valid image file')
+        if not self.make_thumbnail():
+            raise Exception('Problem making thumbnail')
         super(ImageUpload, self).save(*args, **kwargs)
     
     def filename(self):
@@ -146,21 +152,20 @@ class ImageUpload(models.Model):
         else:
             return 'Expires in {0} {1} and {2} {3}'.format(int(hours), hours_string, int(minutes), minutes_string)
     
-    def strip_exif_make_thumb(self):
+    def process_main_image(self):
         image = Image.open(self.image_file)
-        
-        # if file has already been saved we dont want them to be processed/saved again
-        if os.path.isfile(self.image_file.path):
-            return True
-        
+        try:
+            if os.path.isfile(self.image_file.path):
+                return True
+        except ValueError:
+            logging.info('image_file.path had no vaue set yet, gonna process image')
         file_type = image.format.upper()
-        
         try:
             image = reorientate_image(image)
         except Exception:
             logging.info('There was an error dealing with EXIF data when trying to reorientate')
         finally:
-            if image_is_animated_gif(image, file_type) == True:
+            if image_is_animated_gif(image, file_type):
                 pass
                 # Animated gifs are not processed before being saved
             else:
@@ -169,16 +174,22 @@ class ImageUpload(models.Model):
                 temp_image.seek(0)
                 self.image_file.save(self.image_file.name, ContentFile(temp_image.read()), save=False)
                 temp_image.close()
-            
-            # TODO Evaluation and processing of animated gif thumbnails
-                
-            ext = self.filename().split('.')[-1].lower()
-            thumbnail_placefolder = "thumbnail.{0}".format(ext)
-            image.thumbnail(thumb_size, Image.ANTIALIAS)
-            temp_thumb = BytesIO()
-            image.save(temp_thumb, file_type, quality=image_quality_val)
-            temp_thumb.seek(0)
-            self.thumbnail.save(thumbnail_placefolder, ContentFile(temp_thumb.read()), save=False)
-            temp_thumb.close()
- 
             return True
+    
+    def make_thumbnail(self):
+        image = Image.open(self.image_file)
+        try:
+            if os.path.isfile(self.thumbnail.path):
+                return True
+        except ValueError:
+            logging.info('thumbnail.path had no vaue set yet, gonna process image')
+        file_type = image.format.upper()
+        ext = self.filename().split('.')[-1].lower()
+        thumbnail_placefolder = "thumbnail.{0}".format(ext)
+        image.thumbnail(thumb_size, Image.ANTIALIAS)
+        temp_thumb = BytesIO()
+        image.save(temp_thumb, file_type, quality=image_quality_val)
+        temp_thumb.seek(0)
+        self.thumbnail.save(thumbnail_placefolder, ContentFile(temp_thumb.read()), save=False)
+        temp_thumb.close()
+        return True
