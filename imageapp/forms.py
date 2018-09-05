@@ -15,23 +15,8 @@ class ImageUploadForm(forms.ModelForm):
         model = ImageUpload
         fields = (
         'title',
-        'image_file', 'expiry_choice',
-        'private'
-        )
-
-class ImageUploadURLForm(forms.ModelForm):
-    
-    image_form_url = forms.CharField(max_length=255)
-    
-    def __init__(self, *args, **kwargs):
-        super(ImageUploadURLForm, self).__init__(*args, **kwargs)
-        self.fields['private'].initial  = True
-        self.fields['expiry_choice'].initial = -10
-    
-    class Meta:
-        model = ImageUpload
-        fields = (
-        'title',
+        'image_file',
+        'img_url',
         'expiry_choice',
-        'private'
+        'private',
         )
