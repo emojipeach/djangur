@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import logging
 import os
+import requests
 
 from datetime import datetime
 from datetime import timedelta
@@ -13,6 +14,7 @@ from PIL import Image
 from time import localtime
 from time import strftime
 from time import time
+from urllib.parse import urlparse
 
 from django.core.files.base import ContentFile
 from django.db import models
@@ -24,7 +26,6 @@ from imageapp.settings import thumb_size
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s')
 
-
 def image_path(instance, filename):
     """ Provides a path and unique filename."""
     new_folder = str(md5(str(datetime.fromtimestamp(instance.uploaded_time).strftime("%d%m%Y").encode('utf-8')).encode('utf-8')).hexdigest())[2:8]
@@ -35,59 +36,18 @@ def image_path(instance, filename):
     else:
         return '{0}/{1}.{2}'.format(new_folder, new_filename, ext)
 
-
-def image_is_animated_gif(image, image_format):
-    """ Checks whether an image is an animated gif by trying to seek beyond the initial frame. """
-    if image_format != 'GIF':
-        return False
-    try:
-        image.seek(1)
-    except EOFError:
-        return False
-    else:
-        return True
-
-
-def reorientate_image(image):
-    """ Respects orientation tags in exif data while disregarding and etasing the rest."""
-    if hasattr(image, '_getexif'):  # only present in JPEGs
-        for orientation in ExifTags.TAGS.keys():
-            if ExifTags.TAGS[orientation] == 'Orientation':
-                break
-        e = image._getexif()       # returns None if no EXIF data
-        if e is not None:
-            exif = dict(e.items())
-            orientation = exif[orientation]
-            if orientation == 2:
-                image = image.transpose(Image.FLIP_LEFT_RIGHT)
-            elif orientation == 3:
-                image = image.transpose(Image.ROTATE_180)
-            elif orientation == 4:
-                image = image.transpose(Image.FLIP_TOP_BOTTOM)
-            elif orientation == 5:
-                image = image.transpose(Image.FLIP_LEFT_RIGHT, Image.ROTATE_90)
-            elif orientation == 6:
-                image = image.transpose(Image.ROTATE_270)
-            elif orientation == 7:
-                image = image.transpose(Image.FLIP_TOP_BOTTOM, Image.ROTATE_90)
-            elif orientation == 8:
-                image = image.transpose(Image.ROTATE_90)
-            else:
-                pass
-    return image
-
-
 class ImageUpload(models.Model):
     identifier = models.CharField(max_length=32, primary_key=True)
     uploaded_time = models.FloatField()
     title = models.CharField(max_length=50, blank=True)
-    image_file = models.ImageField(upload_to=image_path)
+    image_file = models.ImageField(upload_to=image_path, blank=True)
     thumbnail = models.ImageField(upload_to=image_path, blank=True, editable=False)
     expiry_choice = models.IntegerField(choices=expiry_choices)
     expiry_time = models.FloatField()
     private = models.BooleanField()
     reported = models.IntegerField(default=0)
     reported_first_time = models.FloatField(default=0)
+    img_url = models.CharField(max_length=255, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.process_main_image():
@@ -95,6 +55,50 @@ class ImageUpload(models.Model):
         if not self.make_thumbnail():
             raise Exception('Problem making thumbnail')
         super(ImageUpload, self).save(*args, **kwargs)
+    
+    def image_is_animated_gif(self, image, image_format):
+        """ Checks whether an image is an animated gif by trying to seek beyond the initial frame. """
+        if image_format != 'GIF':
+            return False
+        try:
+            image.seek(1)
+        except EOFError:
+            return False
+        else:
+            return True
+    
+    def reorientate_image(self, image):
+        """ Respects orientation tags in exif data while disregarding and erasing the rest."""
+        if hasattr(image, '_getexif'):  # only present in JPEGs
+            for orientation in ExifTags.TAGS.keys():
+                if ExifTags.TAGS[orientation] == 'Orientation':
+                    break
+            e = image._getexif()       # returns None if no EXIF data
+            if e is not None:
+                exif = dict(e.items())
+                orientation = exif[orientation]
+                if orientation == 2:
+                    image = image.transpose(Image.FLIP_LEFT_RIGHT)
+                elif orientation == 3:
+                    image = image.transpose(Image.ROTATE_180)
+                elif orientation == 4:
+                    image = image.transpose(Image.FLIP_TOP_BOTTOM)
+                elif orientation == 5:
+                    image = image.transpose(Image.FLIP_LEFT_RIGHT, Image.ROTATE_90)
+                elif orientation == 6:
+                    image = image.transpose(Image.ROTATE_270)
+                elif orientation == 7:
+                    image = image.transpose(Image.FLIP_TOP_BOTTOM, Image.ROTATE_90)
+                elif orientation == 8:
+                    image = image.transpose(Image.ROTATE_90)
+                else:
+                    pass
+        return image
+    
+    def file_type_check(self, image, file_type):
+        """ Ensures only allowed files uploaded."""
+        if file_type not in allowed_image_formats:
+            raise ValueError('File type not allowed!')
     
     def filename(self):
         """ Returns just the image filename saved in the instance."""
@@ -163,21 +167,37 @@ class ImageUpload(models.Model):
     
     def process_main_image(self):
         """ Process the main image for saving (accounting for orientation, animated gifs and disallowed file types)."""
-        image = Image.open(self.image_file)
+        if self.image_file:  # Check we have an image uploaded
+            image = Image.open(self.image_file)
+        elif self.img_url:  # Check we have a URL
+            name = urlparse(self.img_url).path.split('/')[-1]
+            response = requests.get(self.img_url)
+            
+            if response.status_code == 200:
+                image = Image.open(BytesIO(response.content))
+                file_type = image.format.upper()
+                self.file_type_check(image, file_type)
+                if self.image_is_animated_gif(image, file_type):
+                    self.image_file.save(name, ContentFile(response.content), save=True)
+                    return True
+            else:
+                raise Exception('Not a valid image URL')
+            
+        else:
+            raise Exception('No Image File or URL provided')
         try:
             if os.path.isfile(self.image_file.path):
                 return True
         except ValueError:
             logging.info('image_file.path had no vaue set yet, gonna process image')
         file_type = image.format.upper()
-        if file_type not in allowed_image_formats:
-            raise ValueError('File type not allowed!')
+        self.file_type_check(image, file_type)
         try:
-            image = reorientate_image(image)
+            image = self.reorientate_image(image)
         except Exception:
             logging.info('There was an error dealing with EXIF data when trying to reorientate')
         finally:
-            if image_is_animated_gif(image, file_type):
+            if self.image_is_animated_gif(image, file_type):
                 pass
                 # Animated gifs are not processed before being saved
             else:
