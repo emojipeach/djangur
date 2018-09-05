@@ -26,3 +26,6 @@ moderation_threshold = 1
 
 """ When an image is moderated the counter will need to reach this number again before it is submitted for reevaluation."""
 moderation_counter_reset = 10
+
+""" Allowed image formats (need to be upper case image formats recognised by pillow."""
+allowed_image_formats = ['JPEG', 'GIF', 'PNG']
