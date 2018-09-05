@@ -56,7 +56,7 @@ def upload(request):
             }
             
             return render(request, 'imageapp/image.html', context)
-    else:
+    else:  # Blank form initially
         form = ImageUploadForm()
     context = {
         'form': form,
@@ -186,6 +186,7 @@ def mod_queue(request):
 
 
 def upload_from_url(request):
+    """ View for file upload from URL."""
     if request.method == 'POST':
         form = ImageUploadURLForm(request.POST)
         if form.is_valid():
@@ -195,9 +196,7 @@ def upload_from_url(request):
             new_image.expiry_time = new_image.get_expiry_time()
             
             img_url = form.cleaned_data['image_form_url']
-            
             name = urlparse(img_url).path.split('/')[-1]
-            
             response = requests.get(img_url)
             
             if response.status_code == 200:
@@ -212,7 +211,9 @@ def upload_from_url(request):
                     temp_image.seek(0)
                     new_image.image_file.save(name, ContentFile(temp_image.read()), save=False)
                     temp_image.close()
-            
+            else:  # URL gave non-200 status code
+                raise Http404("Page not found")
+                
             new_image.save()
             
             context = {
@@ -221,7 +222,7 @@ def upload_from_url(request):
             }
             
             return render(request, 'imageapp/image.html', context)
-    else:
+    else:  # Blank form
         form = ImageUploadURLForm()
     context = {
         'form': form,
