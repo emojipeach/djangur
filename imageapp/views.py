@@ -3,26 +3,18 @@ from __future__ import unicode_literals
 
 import logging
 import os
-import requests
 
-from io import BytesIO
-from PIL import Image
 from random import randint
 from time import time
-from urllib.parse import urlparse
 from uuid import uuid4
 
-from django.core.files.base import ContentFile
 from django.http import HttpResponseRedirect
 from django.http import Http404
 from django.shortcuts import render
 from django.urls import reverse
 
 from imageapp.forms import ImageUploadForm
-from imageapp.forms import ImageUploadURLForm
 from imageapp.models import ImageUpload
-from imageapp.models import image_is_animated_gif
-from imageapp.settings import image_quality_val
 from imageapp.settings import moderation_counter_reset
 from imageapp.settings import moderation_threshold
 # from imageapp.startup import delete_expired_images
@@ -51,8 +43,8 @@ def upload(request):
             new_image.save()
             
             context = {
-            'current_image': new_image,
-            'attempted_upload_success_password': new_image.upload_success_password(),
+                'current_image': new_image,
+                'attempted_upload_success_password': new_image.upload_success_password(),
             }
             
             return render(request, 'imageapp/image.html', context)
@@ -183,49 +175,3 @@ def mod_queue(request):
         'moderate': moderate
     }
     return render(request, 'imageapp/mod_queue.html', context)
-
-
-def upload_from_url(request):
-    """ View for file upload from URL."""
-    if request.method == 'POST':
-        form = ImageUploadURLForm(request.POST)
-        if form.is_valid():
-            new_image = form.save(commit=False)
-            new_image.identifier = uuid4().hex
-            new_image.uploaded_time = time()
-            new_image.expiry_time = new_image.get_expiry_time()
-            
-            img_url = form.cleaned_data['image_form_url']
-            name = urlparse(img_url).path.split('/')[-1]
-            response = requests.get(img_url)
-            
-            if response.status_code == 200:
-                image = Image.open(BytesIO(response.content))
-                file_type = image.format.upper()
-                
-                if image_is_animated_gif(image, file_type):
-                    new_image.image_file.save(name, ContentFile(response.content), save=True)
-                else:
-                    temp_image = BytesIO()
-                    image.save(temp_image, file_type, quality=image_quality_val)
-                    temp_image.seek(0)
-                    new_image.image_file.save(name, ContentFile(temp_image.read()), save=False)
-                    temp_image.close()
-            else:  # URL gave non-200 status code
-                raise Http404("Page not found")
-                
-            new_image.save()
-            
-            context = {
-                'current_image': new_image,
-                'attempted_upload_success_password': new_image.upload_success_password(),
-            }
-            
-            return render(request, 'imageapp/image.html', context)
-    else:  # Blank form
-        form = ImageUploadURLForm()
-    context = {
-        'form': form,
-    }
-    return render(request, 'imageapp/upload.html', context)
-    
