@@ -1,6 +1,6 @@
-## A (very alpha) image hosting script written in Django/Python
+## An image hosting script written in Django/Python
 
-Intended to be an open source privacy focussed image hosting script. Currently at a very early stage.
+Intended to be an open source privacy focussed image hosting script. Currently at an early stage.
 
 ### Implemented:
 * Basic upload form
@@ -16,19 +16,18 @@ Intended to be an open source privacy focussed image hosting script. Currently a
 * Image privacy option
 * Added some upload form defaults
 * Added image deletion link and view with basic success template
+* Report image implemented
+* Mod queue implemented - needs protection with user login and mod group
+* Upload from URL (should display 2 forms on one page)
     
 ### Todo:
-* Image reporting / moderation
-* 
-* Function basic documentation
-* Unittests
-* 
 * User account handling
 * Anon uploads
-* Upload from URL
+* Refactor 2 upload forms
+* Unittests
 
 ### Maybe:
 * Karma
-* Decay
+* Comments
 * Categories
 * Animate gif thumbnails 
