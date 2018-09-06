@@ -54,5 +54,22 @@ body {
 </style>
 </head>
 <body>
+
+<a href="{% url 'imageapp:index' %}">Index</a>
+
+{% if user.is_authenticated %}
+  Hello, {{ user.username }}
+  <a href="{% url 'users:logout' %}">Log out</a>
+{% else %}
+  <a href="{% url 'users:register' %}">Register</a>
+  <a href="{% url 'users:login' %}">Log in</a>
+{% endif %}
+
+
 {% block content %}{% endblock content %}
+
+<div>
+  <a href="{% url 'imageapp:index' %}">Return home</a>
+</div>
+
 </body>
