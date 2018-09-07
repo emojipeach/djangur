@@ -43,7 +43,6 @@ def upload(request):
             if request.user.is_authenticated:
                 new_image.owner = request.user
             new_image.save()
-            
             context = {
                 'current_image': new_image,
                 'attempted_upload_success_password': new_image.upload_success_password(),
