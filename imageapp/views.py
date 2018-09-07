@@ -47,7 +47,6 @@ def upload(request):
                 'current_image': new_image,
                 'attempted_upload_success_password': new_image.upload_success_password(),
             }
-            
             return render(request, 'imageapp/image.html', context)
     else:  # Blank form initially
         form = ImageUploadForm()
@@ -63,7 +62,6 @@ def image(request, identifier):
         current_image = ImageUpload.objects.get(identifier=identifier)
     except Exception:
         raise Http404("Page not found")
-    
     # Lets check if the image.reported field exceeds the moderation threshold
     if current_image.reported >= moderation_threshold:
         message = 'Image awaiting moderation'
@@ -71,11 +69,10 @@ def image(request, identifier):
             'message': message,
         }
         return render(request, 'imageapp/result.html', context)
-        
     # Lets check if the image has expired and is awaiting deletion
     if current_image.expiry_time < time() and current_image.expiry_time > current_image.uploaded_time:
         raise Http404("Page not found")
-    
+
     context = {
         'current_image': current_image,
     }
@@ -99,7 +96,6 @@ def delete_image(request, identifier, deletion_password=''):
             'message': message,
         }
         return render(request, 'imageapp/result.html', context)
-        
     else:
         raise Http404("Page not found")
 
@@ -115,7 +111,7 @@ def report_image(request, identifier):
     if current_image.reported_first_time == 0:
         current_image.reported_first_time = time()
     current_image.save(update_fields=['reported', 'reported_first_time'])
-    
+
     message = 'Image has been reported for moderation'
     context = {
             'message': message,
@@ -129,13 +125,12 @@ def mod_delete_image(request, identifier, deletion_password=''):
         current_image = ImageUpload.objects.get(identifier=identifier)
     except Exception:
         raise Http404("Page not found")
-    
+
     if deletion_password == current_image.deletion_password():
         os.remove(current_image.image_file.path)
         os.remove(current_image.thumbnail.path)
         current_image.delete()
         return HttpResponseRedirect(reverse('imageapp:mod_queue'))
-        
     else:
         raise Http404("Page not found")
 
@@ -146,7 +141,7 @@ def mod_image_acceptable(request, identifier, deletion_password=''):
         current_image = ImageUpload.objects.get(identifier=identifier)
     except Exception:
         raise Http404("Page not found")
-    
+
     if deletion_password == current_image.deletion_password():
         current_image.reported = -moderation_counter_reset
         current_image.reported_first_time = 0
@@ -155,7 +150,7 @@ def mod_image_acceptable(request, identifier, deletion_password=''):
         return HttpResponseRedirect(reverse('imageapp:mod_queue'))
     else:
         raise Http404("Page not found")
-        
+
 
 def mod_queue(request):
     """ View gets 10 images above moderation_threshold and sort by the first time they were reported."""
@@ -171,7 +166,7 @@ def mod_queue(request):
                 'message': message,
             }
         return render(request, 'imageapp/result.html', context)
-        
+
     context = {
         'moderate': moderate
     }
