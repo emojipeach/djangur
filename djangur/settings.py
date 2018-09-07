@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     # My apps
     'imageapp',
     'users',
@@ -124,4 +124,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'img')
+
 MEDIA_URL = '/img/'
+
+LOGIN_URL = '/users/login/'
