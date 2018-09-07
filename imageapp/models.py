@@ -151,7 +151,7 @@ class ImageUpload(models.Model):
         td = et - now
         days, remainder = divmod(td, 86400)
         hours, remainder = divmod(remainder, 3600)
-        minutes, seconds = divmod(remainder, 60)
+        minutes = remainder // 60
         if int(days) == 1:
             days_string = 'day'
         else:
