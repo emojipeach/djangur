@@ -2,7 +2,6 @@ from django.contrib.auth import authenticate
 from django.contrib.auth import login
 from django.contrib.auth import logout
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -30,8 +29,3 @@ def register(request):
             return HttpResponseRedirect(reverse('imageapp:index'))
     context = {'form': form}
     return render(request, 'users/register.html', context)
-
-
-def make_admin_view(request):
-    user = User.objects.create_superuser(username='admin', email='angelinvestor@coffeehouse.com', password='people666')
-    return HttpResponseRedirect(reverse('imageapp:index'))
