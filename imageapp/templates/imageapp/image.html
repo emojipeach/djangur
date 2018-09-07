@@ -5,6 +5,13 @@
 
 <div class="img-title">
   {{ current_image.title }}
+  <br>
+  Uploaded by 
+  {% if current_image.owner %}
+    {{ current_image.owner }}
+  {% else %}
+    Anonymous
+  {% endif %}
 </div>
 
 <div>
