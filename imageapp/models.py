@@ -39,24 +39,6 @@ def image_path(instance, filename):
         return '{0}/{1}.{2}'.format(new_folder, new_filename, ext)
 
 
-def image_is_animated_gif(image, image_format):
-    """ Checks whether an image is an animated gif by trying to seek beyond the initial frame. """
-    if image_format != 'GIF':
-        return False
-    try:
-        image.seek(1)
-    except EOFError:
-        return False
-    else:
-        return True
-
-
-def file_type_check(image, file_type):
-    """ Ensures only allowed files uploaded."""
-    if file_type not in allowed_image_formats:
-        raise ValueError('File type not allowed!')
-
-
 class ImageUpload(models.Model):
     identifier = models.CharField(max_length=32, primary_key=True)
     uploaded_time = models.FloatField()
@@ -78,7 +60,26 @@ class ImageUpload(models.Model):
             raise Exception('Problem making thumbnail')
         super(ImageUpload, self).save(*args, **kwargs)
 
-    def reorientate_image(self, image):
+    @staticmethod
+    def image_is_animated_gif(image, image_format):
+        """ Checks whether an image is an animated gif by trying to seek beyond the initial frame. """
+        if image_format != 'GIF':
+            return False
+        try:
+            image.seek(1)
+        except EOFError:
+            return False
+        else:
+            return True
+
+    @staticmethod
+    def file_type_check(image, file_type):
+        """ Ensures only allowed files uploaded."""
+        if file_type not in allowed_image_formats:
+            raise ValueError('File type not allowed!')
+
+    @staticmethod
+    def reorientate_image(image):
         """ Respects orientation tags in exif data while disregarding and erasing the rest."""
         if hasattr(image, '_getexif'):  # only present in JPEGs
             for orientation in ExifTags.TAGS.keys():
@@ -187,7 +188,7 @@ class ImageUpload(models.Model):
                 image = Image.open(BytesIO(response.content))
                 file_type = image.format.upper()
                 self.file_type_check(image, file_type)
-                if image_is_animated_gif(image, file_type):
+                if self.image_is_animated_gif(image, file_type):
                     self.image_file.save(name, ContentFile(response.content), save=True)
                     return True
             else:
@@ -195,13 +196,13 @@ class ImageUpload(models.Model):
         else:
             raise Exception('No Image File or URL provided')
         file_type = image.format.upper()
-        file_type_check(image, file_type)
+        self.file_type_check(image, file_type)
         try:
             image = self.reorientate_image(image)
         except Exception:
             logging.info('There was an error dealing with EXIF data when trying to reorientate')
         finally:
-            if image_is_animated_gif(image, file_type):
+            if self.image_is_animated_gif(image, file_type):
                 pass
                 # Animated gifs are not processed before being saved
             else:
