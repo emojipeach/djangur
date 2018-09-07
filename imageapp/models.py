@@ -7,7 +7,7 @@ import requests
 
 from datetime import datetime
 from datetime import timedelta
-from hashlib import md5
+from hashlib import sha256
 from io import BytesIO
 from PIL import ExifTags
 from PIL import Image
@@ -16,6 +16,7 @@ from time import strftime
 from time import time
 from urllib.parse import urlparse
 
+from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.db import models
 
@@ -26,15 +27,35 @@ from imageapp.settings import thumb_size
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s')
 
+
 def image_path(instance, filename):
     """ Provides a path and unique filename."""
-    new_folder = str(md5(str(datetime.fromtimestamp(instance.uploaded_time).strftime("%d%m%Y").encode('utf-8')).encode('utf-8')).hexdigest())[2:8]
+    new_folder = str(sha256(str(datetime.fromtimestamp(instance.uploaded_time).strftime("%d%m%Y").encode('utf-8')).encode('utf-8')).hexdigest())[2:8]
     new_filename = instance.identifier
     ext = filename.split('.')[-1].lower()
     if filename.split('.')[0] == 'thumbnail':
         return '{0}/{1}_thumb.{2}'.format(new_folder, new_filename, ext)
     else:
         return '{0}/{1}.{2}'.format(new_folder, new_filename, ext)
+
+
+def image_is_animated_gif(image, image_format):
+    """ Checks whether an image is an animated gif by trying to seek beyond the initial frame. """
+    if image_format != 'GIF':
+        return False
+    try:
+        image.seek(1)
+    except EOFError:
+        return False
+    else:
+        return True
+
+
+def file_type_check(image, file_type):
+    """ Ensures only allowed files uploaded."""
+    if file_type not in allowed_image_formats:
+        raise ValueError('File type not allowed!')
+
 
 class ImageUpload(models.Model):
     identifier = models.CharField(max_length=32, primary_key=True)
@@ -48,6 +69,7 @@ class ImageUpload(models.Model):
     reported = models.IntegerField(default=0)
     reported_first_time = models.FloatField(default=0)
     img_url = models.CharField(max_length=255, blank=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if not self.process_main_image():
@@ -55,17 +77,6 @@ class ImageUpload(models.Model):
         if not self.make_thumbnail():
             raise Exception('Problem making thumbnail')
         super(ImageUpload, self).save(*args, **kwargs)
-    
-    def image_is_animated_gif(self, image, image_format):
-        """ Checks whether an image is an animated gif by trying to seek beyond the initial frame. """
-        if image_format != 'GIF':
-            return False
-        try:
-            image.seek(1)
-        except EOFError:
-            return False
-        else:
-            return True
     
     def reorientate_image(self, image):
         """ Respects orientation tags in exif data while disregarding and erasing the rest."""
@@ -95,22 +106,17 @@ class ImageUpload(models.Model):
                     pass
         return image
     
-    def file_type_check(self, image, file_type):
-        """ Ensures only allowed files uploaded."""
-        if file_type not in allowed_image_formats:
-            raise ValueError('File type not allowed!')
-    
     def filename(self):
         """ Returns just the image filename saved in the instance."""
         return os.path.basename(self.image_file.name)
     
     def upload_success_password(self):
         """ Gives a password used to show the upload success page which includes a deletion link."""
-        return md5(str(self.uploaded_time).encode('utf-8')).hexdigest()[0:6]
+        return sha256(str(self.uploaded_time).encode('utf-8')).hexdigest()[0:6]
     
     def deletion_password(self):
         """ Provides a password used to confirm the user should be able to delete the image."""
-        return md5(str(self.uploaded_time).encode('utf-8')).hexdigest()[6:12]
+        return sha256(str(self.uploaded_time).encode('utf-8')).hexdigest()[6:12]
     
     def formatted_filesize(self):
         """ Returns a formatted string for use in templates from the image.size attribute provided in bytes."""
@@ -167,6 +173,11 @@ class ImageUpload(models.Model):
     
     def process_main_image(self):
         """ Process the main image for saving (accounting for orientation, animated gifs and disallowed file types)."""
+        try:  # We dont want to overwrite a file if already saved
+            if os.path.isfile(self.image_file.path):
+                return True
+        except ValueError:
+            logging.info('image_file.path had no vaue set yet, gonna process image')
         if self.image_file:  # Check we have an image uploaded
             image = Image.open(self.image_file)
         elif self.img_url:  # Check we have a URL
@@ -177,7 +188,7 @@ class ImageUpload(models.Model):
                 image = Image.open(BytesIO(response.content))
                 file_type = image.format.upper()
                 self.file_type_check(image, file_type)
-                if self.image_is_animated_gif(image, file_type):
+                if image_is_animated_gif(image, file_type):
                     self.image_file.save(name, ContentFile(response.content), save=True)
                     return True
             else:
@@ -185,19 +196,14 @@ class ImageUpload(models.Model):
             
         else:
             raise Exception('No Image File or URL provided')
-        try:
-            if os.path.isfile(self.image_file.path):
-                return True
-        except ValueError:
-            logging.info('image_file.path had no vaue set yet, gonna process image')
         file_type = image.format.upper()
-        self.file_type_check(image, file_type)
+        file_type_check(image, file_type)
         try:
             image = self.reorientate_image(image)
         except Exception:
             logging.info('There was an error dealing with EXIF data when trying to reorientate')
         finally:
-            if self.image_is_animated_gif(image, file_type):
+            if image_is_animated_gif(image, file_type):
                 pass
                 # Animated gifs are not processed before being saved
             else:
