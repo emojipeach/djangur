@@ -40,6 +40,8 @@ def upload(request):
             new_image.identifier = uuid4().hex
             new_image.uploaded_time = time()
             new_image.expiry_time = new_image.get_expiry_time()
+            if request.user.is_authenticated:
+                new_image.owner = request.user
             new_image.save()
             
             context = {
