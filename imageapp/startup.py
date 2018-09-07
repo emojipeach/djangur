@@ -14,6 +14,7 @@ from imageapp.settings import expiry_removal_frequency
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s')
 
+
 def delete_expired_images():
     """ This function selects all images which have an expiry set before now and deletes them permanently."""
     logging.info('Expired image cleanup started...')
@@ -28,10 +29,11 @@ def delete_expired_images():
         logging.info('deleted an expired image: {0}'.format(filename))
     logging.info('Expired image cleanup finished...')
 
+
 def launch_expired_image_remover():
     """ This function runs the expired images delete function every hour (freq can be changed in settings)."""
     t = threading.Timer(expiry_removal_frequency, launch_expired_image_remover)
     t.start()
     delete_expired_images()
-    
+
 launch_expired_image_remover()
