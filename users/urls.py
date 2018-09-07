@@ -14,6 +14,4 @@ urlpatterns = [
     # Registration page
     path('register/', views.register,
     name='register'),
-    # DELETE THIS VIEW!!
-    path('make_admin/', views.make_admin_view, name='make_admin'),
     ]
