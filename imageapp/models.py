@@ -77,7 +77,7 @@ class ImageUpload(models.Model):
         if not self.make_thumbnail():
             raise Exception('Problem making thumbnail')
         super(ImageUpload, self).save(*args, **kwargs)
-    
+
     def reorientate_image(self, image):
         """ Respects orientation tags in exif data while disregarding and erasing the rest."""
         if hasattr(image, '_getexif'):  # only present in JPEGs
@@ -105,19 +105,19 @@ class ImageUpload(models.Model):
                 else:
                     pass
         return image
-    
+
     def filename(self):
         """ Returns just the image filename saved in the instance."""
         return os.path.basename(self.image_file.name)
-    
+
     def upload_success_password(self):
         """ Gives a password used to show the upload success page which includes a deletion link."""
         return sha256(str(self.uploaded_time).encode('utf-8')).hexdigest()[0:6]
-    
+
     def deletion_password(self):
         """ Provides a password used to confirm the user should be able to delete the image."""
         return sha256(str(self.uploaded_time).encode('utf-8')).hexdigest()[6:12]
-    
+
     def formatted_filesize(self):
         """ Returns a formatted string for use in templates from the image.size attribute provided in bytes."""
         size_bytes = self.image_file.size
@@ -128,19 +128,19 @@ class ImageUpload(models.Model):
         else:
             result = "Filesize: " + '{:,}'.format(size_bytes) + " Bytes"
         return result
-    
+
     def formatted_uploaded_time(self):
         """ Provides a formatted timestamp for template use."""
         result = "Uploaded at " + strftime('%b. %d, %Y, %-I:%M %p', localtime(self.uploaded_time))
         return result
-    
+
     def get_expiry_time(self):
         """ Provided the exact expiry time of an instance."""
         uploaded = datetime.fromtimestamp(self.uploaded_time)
         expiry = uploaded + timedelta(days=self.expiry_choice)
         result = expiry.timestamp()
         return result
-    
+
     def formatted_expiry_delta(self):
         """ Provides a formatted expiry time delta used in templates."""
         et = self.expiry_time
@@ -170,7 +170,7 @@ class ImageUpload(models.Model):
             return 'Expires in {0} {1} and {2} {3}'.format(int(days), days_string, int(hours), hours_string)
         else:
             return 'Expires in {0} {1} and {2} {3}'.format(int(hours), hours_string, int(minutes), minutes_string)
-    
+
     def process_main_image(self):
         """ Process the main image for saving (accounting for orientation, animated gifs and disallowed file types)."""
         try:  # We dont want to overwrite a file if already saved
@@ -183,7 +183,6 @@ class ImageUpload(models.Model):
         elif self.img_url:  # Check we have a URL
             name = urlparse(self.img_url).path.split('/')[-1]
             response = requests.get(self.img_url)
-            
             if response.status_code == 200:
                 image = Image.open(BytesIO(response.content))
                 file_type = image.format.upper()
@@ -193,7 +192,6 @@ class ImageUpload(models.Model):
                     return True
             else:
                 raise Exception('Not a valid image URL')
-            
         else:
             raise Exception('No Image File or URL provided')
         file_type = image.format.upper()
@@ -213,7 +211,7 @@ class ImageUpload(models.Model):
                 self.image_file.save(self.image_file.name, ContentFile(temp_image.read()), save=False)
                 temp_image.close()
             return True
-    
+
     def make_thumbnail(self):
         """ Makes and saves a thumbnail."""
         image = Image.open(self.image_file)
