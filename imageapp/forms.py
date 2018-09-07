@@ -5,7 +5,7 @@ from django import forms
 from .models import ImageUpload
 
 class ImageUploadForm(forms.ModelForm):
-    
+
     def __init__(self, *args, **kwargs):
         super(ImageUploadForm, self).__init__(*args, **kwargs)
         self.fields['private'].initial  = True
