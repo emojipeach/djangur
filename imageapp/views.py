@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import codecs
 import logging
 import os
 
-from random import randint
 from time import time
 from uuid import uuid4
 
@@ -159,7 +159,8 @@ def mod_queue(request):
         ).order_by('-reported_first_time')[:10]
     # Lets pick a random image from this list to show to moderator
     try:
-        moderate = images_for_moderation[randint(0, len(images_for_moderation) - 1)]
+        pick_an_image = int(int(codecs.encode(os.urandom(1), 'hex'), 16) / 255 * len(images_for_moderation))  # Random number upto len(i_for_m)
+        moderate = images_for_moderation[pick_an_image]
     except ValueError:
         message = 'Moderation queue empty'
         context = {
