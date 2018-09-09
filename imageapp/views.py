@@ -16,8 +16,8 @@ from django.urls import reverse
 
 from imageapp.forms import ImageUploadForm
 from imageapp.models import ImageUpload
-from imageapp.settings import moderation_counter_reset
-from imageapp.settings import moderation_threshold
+from imageapp.settings import MODERATION_COUNTER_RESET
+from imageapp.settings import MODERATION_THRESHOLD
 # from imageapp.startup import delete_expired_images
 
 logging.basicConfig(
@@ -64,7 +64,7 @@ def image(request, identifier):
     except Exception:
         raise Http404("Page not found")
     # Lets check if the image.reported field exceeds the moderation threshold
-    if current_image.reported >= moderation_threshold:
+    if current_image.reported >= MODERATION_THRESHOLD:
         message = 'Image awaiting moderation'
         context = {
             'message': message,
@@ -155,7 +155,7 @@ def mod_image_acceptable(request, identifier, deletion_password=''):
         raise Http404("Page not found")
 
     if deletion_password == current_image.deletion_password():
-        current_image.reported = -moderation_counter_reset
+        current_image.reported = -MODERATION_COUNTER_RESET
         current_image.reported_first_time = 0
         current_image.save(update_fields=['reported', 'reported_first_time'])
         # TODO attribute this action to the mod responsible
@@ -167,7 +167,7 @@ def mod_image_acceptable(request, identifier, deletion_password=''):
 def mod_queue(request):
     """ View gets 10 images above moderation_threshold and sort by the first time they were reported."""
     images_for_moderation = ImageUpload.objects.filter(
-        reported__gte=moderation_threshold
+        reported__gte=MODERATION_THRESHOLD
         ).order_by('-reported_first_time')[:10]
     # Lets pick a random image from this list to show to moderator
     try:
