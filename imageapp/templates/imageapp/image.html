@@ -61,7 +61,7 @@ clipboard.on('error', function(e) {
   <button class="btn" data-clipboard-action="copy" data-clipboard-target="#reddit-markdown">Copy</button>
 </div>
 
-{% if attempted_upload_success_password == current_image.upload_success_password %}
+{% if attempted_upload_success_password == current_image.upload_success_password or request.user.id == current_image.owner.id and request.user.id is not None %}
 
 <div>
   <font class="clipboard-titles">Delete Image Link:</font><br>
