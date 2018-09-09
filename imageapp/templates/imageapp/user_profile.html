@@ -1,0 +1,29 @@
+{% extends "imageapp/base.html" %}
+
+{% block content %}
+
+<div>
+Images uploaded by {{ current_user.username }}
+</div>
+
+{% for image in images %}
+
+{{ image.description }}
+
+<div>
+  <a href="{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:image' image.identifier %}">
+  <img class="main-image" src="{{ image.image_file.url }}" alt="{{ image.title }}" >
+  </a>
+</div>
+
+<br>
+
+{% empty %}
+
+<div>
+This user has no images
+</div>
+
+{% endfor %}
+
+{% endblock content %}
