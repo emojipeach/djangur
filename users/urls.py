@@ -23,4 +23,10 @@ urlpatterns = [
         views.register,
         name='register'
         ),
+    # Password change
+    path(
+        'password/',
+        views.password_change,
+        name = "password_change"
+        ),
     ]
