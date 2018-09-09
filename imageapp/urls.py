@@ -24,4 +24,6 @@ urlpatterns = [
     path('report_image/<str:identifier>/', views.report_image, name='report_image'),
     # Moderator queue
     path('mod_queue/', views.mod_queue, name='mod_queue'),
+    # User profile
+    path('profile/<str:username>/', views.profile, name='profile'),
 ]
