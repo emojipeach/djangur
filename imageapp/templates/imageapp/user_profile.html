@@ -8,7 +8,7 @@ Images uploaded by {{ current_user.username }}
 
 {% for image in images %}
 
-{{ image.description }}
+{% if request.user.id == current_user.id %}
 
 <div>
   <a href="{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:image' image.identifier %}">
@@ -17,6 +17,18 @@ Images uploaded by {{ current_user.username }}
 </div>
 
 <br>
+
+{% elif image.private is False %}
+
+<div>
+  <a href="{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:image' image.identifier %}">
+  <img class="main-image" src="{{ image.image_file.url }}" alt="{{ image.title }}" >
+  </a>
+</div>
+
+<br>
+
+{% endif %}
 
 {% empty %}
 
