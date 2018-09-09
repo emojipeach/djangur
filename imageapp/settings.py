@@ -21,7 +21,7 @@ EXPIRY_CHOICES = (
 # Sets the frequency at which image expiries are checked and images deleted in seconds.
 EXPIRY_REMOVAL_FREQUENCY = 3600
 
-# Sets a number of reports above which an image becomes inaccessable and is added to the moderation queue for approval or deletion.
+# Sets a number of reports above which an image becomes inaccessable and is added to the moderation queue.
 MODERATION_THRESHOLD = 1
 
 # When an image is moderated the counter will need to reach this number again before it is submitted for reevaluation.
