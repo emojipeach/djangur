@@ -8,6 +8,7 @@ import os
 from time import time
 from uuid import uuid4
 
+from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.http import Http404
 from django.shortcuts import render
@@ -77,6 +78,17 @@ def image(request, identifier):
         'current_image': current_image,
     }
     return render(request, 'imageapp/image.html', context)
+
+
+def profile(request, username):
+    current_user = User.objects.get(username=username)
+    user_id = current_user.id
+    images = ImageUpload.objects.filter(owner=user_id).order_by('-uploaded_time')
+    context = {
+        'images': images,
+        'current_user': current_user,
+        }
+    return render(request, 'imageapp/user_profile.html', context)
 
 
 def delete_image(request, identifier, deletion_password=''):
@@ -159,7 +171,8 @@ def mod_queue(request):
         ).order_by('-reported_first_time')[:10]
     # Lets pick a random image from this list to show to moderator
     try:
-        pick_an_image = int(int(codecs.encode(os.urandom(1), 'hex'), 16) / 255 * len(images_for_moderation))  # Random number upto len(i_for_m)
+        pick_an_image = int(int(codecs.encode(os.urandom(1), 'hex'), 16) / 255 * len(images_for_moderation))  
+        # Random number upto len(i_for_m)
         moderate = images_for_moderation[pick_an_image]
     except ValueError:
         message = 'Moderation queue empty'
