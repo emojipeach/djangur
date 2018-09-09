@@ -19,7 +19,7 @@ def logout_view(request):
 
 
 def register(request):
-    """Register a new user"""
+    """Register a new user."""
     if request.method != 'POST':
         # Display a blank registration form
         form = UserCreationForm()
@@ -38,6 +38,7 @@ def register(request):
 
 @login_required
 def password_change(request):
+    """ Allows a user to change their own password."""
     if request.method == 'POST':
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():
