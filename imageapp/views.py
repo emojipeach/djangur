@@ -172,7 +172,7 @@ def mod_queue(request):
         ).order_by('-reported_first_time')[:10]
     # Lets pick a random image from this list to show to moderator
     try:
-        pick_an_image = int(int(codecs.encode(os.urandom(1), 'hex'), 16) / 255 * len(images_for_moderation))  
+        pick_an_image = int(int(codecs.encode(os.urandom(1), 'hex'), 16) / 255 * len(images_for_moderation))
         # Random number upto len(i_for_m)
         moderate = images_for_moderation[pick_an_image]
     except ValueError:
