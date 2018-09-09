@@ -23,11 +23,11 @@ Intended to be an open source privacy focussed image hosting script. Currently a
 * Upload from URL
 * Image ownership and user accounts
 * Anon uploads
+* Image profile pages
+* Password change
     
 ### Todo:
-* Image profile pages
 * User settings page
-* PW change
 * Unittests
 
 ### Maybe:
