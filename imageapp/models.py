@@ -41,6 +41,7 @@ def image_path(instance, filename):
 
 
 class ImageUpload(models.Model):
+    """ The main class which stores data about uploaded images."""
     identifier = models.CharField(max_length=32, primary_key=True)
     uploaded_time = models.FloatField()
     title = models.CharField(max_length=50, blank=True)
