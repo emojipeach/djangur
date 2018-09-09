@@ -9,21 +9,56 @@ app_name = 'imageapp'
 
 urlpatterns = [
     # Home page
-    path('', views.index, name='index'),
+    path(
+        '', views.index,
+        name='index'
+        ),
     # Upload page
-    path('upload/', views.upload, name='upload'),
+    path(
+        'upload/',
+        views.upload,
+        name='upload'
+        ),
     # View an image
-    path('image/<str:identifier>/', views.image, name='image'),
+    path(
+        'image/<str:identifier>/',
+        views.image,
+        name='image'
+        ),
     # Delete an image
-    path('delete_image/<str:identifier>/<str:deletion_password>/', views.delete_image, name='delete_image'),
+    path(
+        'delete_image/<str:identifier>/<str:deletion_password>/',
+        views.delete_image,
+        name='delete_image'
+        ),
     # Moderator delete an image
-    path('mod_delete_image/<str:identifier>/<str:deletion_password>/', views.mod_delete_image, name='mod_delete_image'),
+    path(
+        'mod_delete_image/<str:identifier>/<str:deletion_password>/',
+        views.mod_delete_image,
+        name='mod_delete_image'
+        ),
     # Moderator reset image reporting
-    path('mod_image_acceptable/<str:identifier>/<str:deletion_password>/', views.mod_image_acceptable, name='mod_image_acceptable'),
+    path(
+        'mod_image_acceptable/<str:identifier>/<str:deletion_password>/',
+        views.mod_image_acceptable,
+        name='mod_image_acceptable'
+        ),
     # Report an image
-    path('report_image/<str:identifier>/', views.report_image, name='report_image'),
+    path(
+        'report_image/<str:identifier>/',
+        views.report_image,
+        name='report_image'
+        ),
     # Moderator queue
-    path('mod_queue/', views.mod_queue, name='mod_queue'),
+    path(
+        'mod_queue/',
+        views.mod_queue,
+        name='mod_queue'
+        ),
     # User profile
-    path('profile/<str:username>/', views.profile, name='profile'),
+    path(
+        'profile/<str:username>/',
+        views.profile,
+        name='profile'
+        ),
 ]
