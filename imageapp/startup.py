@@ -10,7 +10,7 @@ from time import time
 from django.db.models import F
 
 from imageapp.models import ImageUpload
-from imageapp.settings import expiry_removal_frequency
+from imageapp.settings import EXPIRY_REMOVAL_FREQUENCY
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s')
 
@@ -32,7 +32,7 @@ def delete_expired_images():
 
 def launch_expired_image_remover():
     """ This function runs the expired images delete function every hour (freq can be changed in settings)."""
-    t = threading.Timer(expiry_removal_frequency, launch_expired_image_remover)
+    t = threading.Timer(EXPIRY_REMOVAL_FREQUENCY, launch_expired_image_remover)
     t.start()
     delete_expired_images()
 
