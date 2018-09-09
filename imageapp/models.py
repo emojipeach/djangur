@@ -30,7 +30,8 @@ logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - 
 
 def image_path(instance, filename):
     """ Provides a path and unique filename."""
-    new_folder = str(sha256(str(datetime.fromtimestamp(instance.uploaded_time).strftime("%d%m%Y").encode('utf-8')).encode('utf-8')).hexdigest())[2:8]
+    new_folder = str(sha256(str(datetime.fromtimestamp(
+        instance.uploaded_time).strftime("%d%m%Y").encode('utf-8')).encode('utf-8')).hexdigest())[2:8]
     new_filename = instance.identifier
     ext = filename.split('.')[-1].lower()
     if filename.split('.')[0] == 'thumbnail':
