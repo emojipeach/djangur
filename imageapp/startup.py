@@ -35,8 +35,8 @@ def delete_expired_images():
 
 def launch_expired_image_remover():
     """ This function runs the expired images delete function every hour (freq can be changed in settings)."""
-    t = threading.Timer(EXPIRY_REMOVAL_FREQUENCY, launch_expired_image_remover)
-    t.start()
+    threads = threading.Timer(EXPIRY_REMOVAL_FREQUENCY, launch_expired_image_remover)
+    threads.start()
     delete_expired_images()
 
 launch_expired_image_remover()
