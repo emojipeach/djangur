@@ -9,7 +9,7 @@ class ImageUploadForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(ImageUploadForm, self).__init__(*args, **kwargs)
-        self.fields['private'].initial  = True
+        self.fields['private'].initial = True
         self.fields['expiry_choice'].initial = -10
 
     class Meta:
