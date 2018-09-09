@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+
+""" Runs at startup (called by imageapp.views)."""
+
 from __future__ import unicode_literals
 
 import logging
