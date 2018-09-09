@@ -203,17 +203,16 @@ class ImageUpload(models.Model):
             image = self.reorientate_image(image)
         except Exception:
             logging.info('There was an error dealing with EXIF data when trying to reorientate')
-        finally:
-            if self.image_is_animated_gif(image, file_type):
-                pass
-                # Animated gifs are not processed before being saved
-            else:
-                temp_image = BytesIO()
-                image.save(temp_image, file_type, quality=IMAGE_QUALITY_VAL)
-                temp_image.seek(0)
-                self.image_file.save(self.image_file.name, ContentFile(temp_image.read()), save=False)
-                temp_image.close()
-            return True
+        if self.image_is_animated_gif(image, file_type):
+            pass
+            # Animated gifs are not processed before being saved
+        else:
+            temp_image = BytesIO()
+            image.save(temp_image, file_type, quality=IMAGE_QUALITY_VAL)
+            temp_image.seek(0)
+            self.image_file.save(self.image_file.name, ContentFile(temp_image.read()), save=False)
+            temp_image.close()
+        return True
 
     def make_thumbnail(self):
         """ Makes and saves a thumbnail."""
