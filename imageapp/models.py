@@ -20,10 +20,10 @@ from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.db import models
 
-from imageapp.settings import allowed_image_formats
-from imageapp.settings import expiry_choices
-from imageapp.settings import image_quality_val
-from imageapp.settings import thumb_size
+from imageapp.settings import ALLOWED_IMAGE_FORMATS
+from imageapp.settings import EXPIRY_CHOICES
+from imageapp.settings import IMAGE_QUALITY_VAL
+from imageapp.settings import THUMB_SIZE
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s')
 
@@ -45,7 +45,7 @@ class ImageUpload(models.Model):
     title = models.CharField(max_length=50, blank=True)
     image_file = models.ImageField(upload_to=image_path, blank=True)
     thumbnail = models.ImageField(upload_to=image_path, blank=True, editable=False)
-    expiry_choice = models.IntegerField(choices=expiry_choices)
+    expiry_choice = models.IntegerField(choices=EXPIRY_CHOICES)
     expiry_time = models.FloatField()
     private = models.BooleanField()
     reported = models.IntegerField(default=0)
@@ -75,7 +75,7 @@ class ImageUpload(models.Model):
     @staticmethod
     def file_type_check(image, file_type):
         """ Ensures only allowed files uploaded."""
-        if file_type not in allowed_image_formats:
+        if file_type not in ALLOWED_IMAGE_FORMATS:
             raise ValueError('File type not allowed!')
 
     @staticmethod
@@ -207,7 +207,7 @@ class ImageUpload(models.Model):
                 # Animated gifs are not processed before being saved
             else:
                 temp_image = BytesIO()
-                image.save(temp_image, file_type, quality=image_quality_val)
+                image.save(temp_image, file_type, quality=IMAGE_QUALITY_VAL)
                 temp_image.seek(0)
                 self.image_file.save(self.image_file.name, ContentFile(temp_image.read()), save=False)
                 temp_image.close()
@@ -224,9 +224,9 @@ class ImageUpload(models.Model):
         file_type = image.format.upper()
         ext = self.filename().split('.')[-1].lower()
         thumbnail_placefolder = "thumbnail.{0}".format(ext)
-        image.thumbnail(thumb_size, Image.ANTIALIAS)
+        image.thumbnail(THUMB_SIZE, Image.ANTIALIAS)
         temp_thumb = BytesIO()
-        image.save(temp_thumb, file_type, quality=image_quality_val)
+        image.save(temp_thumb, file_type, quality=IMAGE_QUALITY_VAL)
         temp_thumb.seek(0)
         self.thumbnail.save(thumbnail_placefolder, ContentFile(temp_thumb.read()), save=False)
         temp_thumb.close()
