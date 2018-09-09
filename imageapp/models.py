@@ -73,7 +73,7 @@ class ImageUpload(models.Model):
             return True
 
     @staticmethod
-    def file_type_check(image, file_type):
+    def file_type_check(file_type):
         """ Ensures only allowed files uploaded."""
         if file_type not in ALLOWED_IMAGE_FORMATS:
             raise ValueError('File type not allowed!')
@@ -187,7 +187,7 @@ class ImageUpload(models.Model):
             if response.status_code == 200:
                 image = Image.open(BytesIO(response.content))
                 file_type = image.format.upper()
-                self.file_type_check(image, file_type)
+                self.file_type_check(file_type)
                 if self.image_is_animated_gif(image, file_type):
                     self.image_file.save(name, ContentFile(response.content), save=True)
                     return True
@@ -196,7 +196,7 @@ class ImageUpload(models.Model):
         else:
             raise Exception('No Image File or URL provided')
         file_type = image.format.upper()
-        self.file_type_check(image, file_type)
+        self.file_type_check(file_type)
         try:
             image = self.reorientate_image(image)
         except Exception:
