@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+
+""" Contains all url patterns for imageapp app."""
+
 from __future__ import unicode_literals
 
 from django.urls import path
