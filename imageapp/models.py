@@ -146,13 +146,13 @@ class ImageUpload(models.Model):
 
     def formatted_expiry_delta(self):
         """ Provides a formatted expiry time delta used in templates."""
-        et = self.expiry_time
-        ut = self.uploaded_time
-        if et < ut:
+        ex_time = self.expiry_time
+        up_time = self.uploaded_time
+        if ex_time < up_time:
             return 'Never expires'
         now = time()
-        td = et - now
-        days, remainder = divmod(td, 86400)
+        tdelt = ex_time - now
+        days, remainder = divmod(tdelt, 86400)
         hours, remainder = divmod(remainder, 3600)
         minutes = remainder // 60
         if int(days) == 1:
