@@ -8,6 +8,7 @@ import os
 from time import time
 from uuid import uuid4
 
+from django.contrib import messages
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.http import Http404
@@ -65,11 +66,10 @@ def image(request, identifier):
         raise Http404("Page not found")
     # Lets check if the image.reported field exceeds the moderation threshold
     if current_image.reported >= MODERATION_THRESHOLD:
-        message = 'Image awaiting moderation'
-        context = {
-            'message': message,
-        }
-        return render(request, 'imageapp/result.html', context)
+
+        messages.error(request, 'Image ({0}) awaiting moderation.'.format(identifier))
+
+        return HttpResponseRedirect(reverse('imageapp:index'))
     # Lets check if the image has expired and is awaiting deletion
     if current_image.expiry_time < time() and current_image.expiry_time > current_image.uploaded_time:
         raise Http404("Page not found")
@@ -101,14 +101,13 @@ def delete_image(request, identifier, deletion_password=''):
     # Lets check the deletion password is correct
     if deletion_password == current_image.deletion_password():
         # If so we need to delete the instance and all associated files
-        message = current_image.filename() + ' deleted'
         os.remove(current_image.image_file.path)
         os.remove(current_image.thumbnail.path)
         current_image.delete()
-        context = {
-            'message': message,
-        }
-        return render(request, 'imageapp/result.html', context)
+
+        messages.success(request, 'Image ({0}) deleted.'.format(identifier))
+
+        return HttpResponseRedirect(reverse('imageapp:index'))
     else:
         raise Http404("Page not found")
 
@@ -125,11 +124,9 @@ def report_image(request, identifier):
         current_image.reported_first_time = time()
     current_image.save(update_fields=['reported', 'reported_first_time'])
 
-    message = 'Image has been reported for moderation'
-    context = {
-            'message': message,
-        }
-    return render(request, 'imageapp/result.html', context)
+    messages.success(request, 'Image ({0}) reported.'.format(identifier))
+
+    return HttpResponseRedirect(reverse('imageapp:image', args=[identifier]))
 
 
 def mod_delete_image(request, identifier, deletion_password=''):
@@ -143,6 +140,9 @@ def mod_delete_image(request, identifier, deletion_password=''):
         os.remove(current_image.image_file.path)
         os.remove(current_image.thumbnail.path)
         current_image.delete()
+
+        messages.success(request, 'Previous image ({0}) deleted.'.format(identifier))
+
         return HttpResponseRedirect(reverse('imageapp:mod_queue'))
     else:
         raise Http404("Page not found")
@@ -160,6 +160,9 @@ def mod_image_acceptable(request, identifier, deletion_password=''):
         current_image.reported_first_time = 0
         current_image.save(update_fields=['reported', 'reported_first_time'])
         # TODO attribute this action to the mod responsible
+
+        messages.success(request, 'Previous image ({0}) acceptable.'.format(identifier))
+
         return HttpResponseRedirect(reverse('imageapp:mod_queue'))
     else:
         raise Http404("Page not found")
@@ -175,12 +178,10 @@ def mod_queue(request):
         pick_an_image = int(int(codecs.encode(os.urandom(1), 'hex'), 16) / 255 * len(images_for_moderation))
         # Random number upto len(i_for_m)
         moderate = images_for_moderation[pick_an_image]
-    except ValueError:
-        message = 'Moderation queue empty'
-        context = {
-                'message': message,
-            }
-        return render(request, 'imageapp/result.html', context)
+    except (ValueError, IndexError):
+        messages.error(request, 'Moderation queue empty')
+
+        return HttpResponseRedirect(reverse('imageapp:index'))
 
     context = {
         'moderate': moderate
