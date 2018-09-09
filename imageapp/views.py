@@ -81,6 +81,7 @@ def image(request, identifier):
 
 
 def profile(request, username):
+    """ Displays a user's profile."""
     current_user = User.objects.get(username=username)
     user_id = current_user.id
     images = ImageUpload.objects.filter(owner=user_id).order_by('-uploaded_time')
