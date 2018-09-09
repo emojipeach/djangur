@@ -87,9 +87,9 @@ class ImageUpload(models.Model):
             for orientation in ExifTags.TAGS.keys():
                 if ExifTags.TAGS[orientation] == 'Orientation':
                     break
-            e = image._getexif()       # returns None if no EXIF data
-            if e is not None:
-                exif = dict(e.items())
+            exif_data = image._getexif()       # returns None if no EXIF data
+            if exif_data is not None:
+                exif = dict(exif_data.items())
                 orientation = exif[orientation]
                 if orientation == 2:
                     image = image.transpose(Image.FLIP_LEFT_RIGHT)
