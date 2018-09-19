@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
+    <script src="https://unpkg.com/clipboard@2.0.0/dist/clipboard.min.js"></script>
+    <title>A Simple Image Host</title>
+    
+<style>
+body {
+	margin: 0;
+	padding: 0;
+	font-family: "Open Sans";
+	color: #444444;
+}
+.img-title {
+	font-size: 16px;
+	text-align: center;
+}
+.main-image {
+    width: 80%;
+    height: auto;
+    display: block;
+	margin-left: auto;
+	margin-right: auto;
+}
+.uploaded_time {
+	font-size: 12px;
+	text-align: right;
+}
+.expiry {
+	font-size: 12px;
+	text-align: right;
+}
+.filesize {
+	font-size: 12px;
+	text-align: right;
+}
+.clipboard-titles {
+	font-size: 12px;
+}
+.result-message {
+	font-size: 12px;
+}
+.index-thumbnail {
+	width: 80%;
+    height: auto;
+    display: block;
+	margin-left: auto;
+	margin-right: auto;
+	overflow: hidden;
+}
+</style>
+</head>
+<body>
+
+  <div>
+  <a href="{% url 'imageapp:index' %}">Index</a> | <a href="{% url 'messages_inbox' %}">Messages</a>
+  </div>
+  
+  {% if user.is_authenticated %}
+  
+    <div>
+    Hi {{ user.username }}!
+    <a href="{% url 'users:logout' %}">logout</a>
+    <a href="{% url 'users:my_profile' %}">user profile</a>
+    </div>
+    
+  {% else %}
+    
+    <div>
+    You are not logged in
+    <a href="{% url 'users:login' %}">login</a> |
+    <a href="{% url 'users:signup' %}">signup</a>
+    </div>
+    
+  {% endif %}
+
+  {% if messages %}
+  <ul class="messages">
+  {% for message in messages %}
+    <li {% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+  {% endfor %}
+  </ul>
+  {% endif %}
+  
+  {% block content %}
+  {% endblock %}
+  
+  <div id="SideBar" class="FloatLeft">
+  {% block sidebar %}
+  {% endblock %}
+  </div>
+
+</body>

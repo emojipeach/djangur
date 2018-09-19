@@ -1,32 +1,47 @@
 from django.urls import path
 from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LogoutView
 
 from . import views
 
 app_name = 'users'
+
 urlpatterns = [
-    # Login page
+    # user signup
+    path(
+        'signup/',
+        views.signup,
+        name='signup'
+        ),
+    # user login
     path(
         'login/',
         LoginView.as_view(template_name='users/login.html'),
         name='login'
         ),
-    # Logout page
+    # user logout
     path(
         'logout/',
-        views.logout_view,
+        LogoutView.as_view(template_name='users/login.html'),
         name='logout'
         ),
-    # Registration page
+    # user self password change
     path(
-        'register/',
-        views.register,
-        name='register'
-        ),
-    # Password change
-    path(
-        'password/',
+        'password_change/',
         views.password_change,
-        name="password_change"
+        name='password_change'
         ),
-    ]
+    # user edit own settings
+    path(
+        'edit_profile/',
+        views.edit_profile,
+        name='edit_profile'
+        ),
+    # user's own profile
+    path(
+        'profile/',
+        views.my_profile,
+        name='my_profile'
+        ),
+]
+
