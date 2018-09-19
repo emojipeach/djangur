@@ -16,7 +16,7 @@ from time import strftime
 from time import time
 from urllib.parse import urlparse
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.db import models
 
@@ -26,6 +26,9 @@ from imageapp.settings import IMAGE_QUALITY_VAL
 from imageapp.settings import THUMB_SIZE
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s')
+
+
+User = get_user_model()
 
 
 def image_path(instance, filename):

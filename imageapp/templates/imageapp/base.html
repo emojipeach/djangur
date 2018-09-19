@@ -55,28 +55,42 @@ body {
 </head>
 <body>
 
-<a href="{% url 'imageapp:index' %}">Index</a>
+  <div>
+  <a href="{% url 'imageapp:index' %}">Index</a> | <a href="{% url 'messages_inbox' %}">Messages</a>
+  </div>
+  
+  {% if user.is_authenticated %}
+  
+    <div>
+    Hi {{ user.username }}!
+    <a href="{% url 'users:logout' %}">logout</a>
+    <a href="{% url 'users:my_profile' %}">user profile</a>
+    </div>
+    
+  {% else %}
+    
+    <div>
+    You are not logged in
+    <a href="{% url 'users:login' %}">login</a> |
+    <a href="{% url 'users:signup' %}">signup</a>
+    </div>
+    
+  {% endif %}
 
-{% if user.is_authenticated %}
-  Hello, {{ user.username }}
-  <a href="{% url 'users:logout' %}">Log out</a>
-{% else %}
-  <a href="{% url 'users:register' %}">Register</a>
-  <a href="{% url 'users:login' %}">Log in</a>
-{% endif %}
-
-{% if messages %}
-<ul class="messages">
-    {% for message in messages %}
+  {% if messages %}
+  <ul class="messages">
+  {% for message in messages %}
     <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-    {% endfor %}
-</ul>
-{% endif %}
-
-{% block content %}{% endblock content %}
-
-<div>
-  <a href="{% url 'imageapp:index' %}">Return home</a>
-</div>
+  {% endfor %}
+  </ul>
+  {% endif %}
+  
+  {% block content %}
+  {% endblock %}
+  
+  <div id="SideBar" class="FloatLeft">
+  {% block sidebar %}
+  {% endblock %}
+  </div>
 
 </body>

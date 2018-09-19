@@ -1,0 +1,18 @@
+{% extends "imageapp/base.html" %}
+
+{% block content %}
+{% endblock %}
+
+{% block sidebar %}
+
+{% load inbox %}
+{% inbox_count as inbox_count_var %}
+
+<ul class="subnavilist">
+    <li><a href="{% url 'messages_inbox' %} ">&raquo; Inbox {% if inbox_count_var %}
+    ({{ inbox_count_var }} New){% endif %}</a></li>
+    <li><a href="{% url 'messages_outbox' %} ">&raquo; Sent Messages</a></li>
+    <li><a href="{% url 'messages_compose' %} ">&raquo; Compose Message</a></li>
+    <li><a href="{% url 'messages_trash' %} ">&raquo; Trash</a></li>
+</ul>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "imageapp/base.html" %}
+
+{% block title %}Your user profile{% endblock %}
+
+{% block content %}
+
+<h2>Your user profile</h2>
+
+<div>
+Username: {{ current_user.username }}
+</div>
+
+<div>
+Email: {{ current_user.email }}
+</div>
+
+<div>
+First name: {{ current_user.first_name }}
+</div>
+
+<div>
+Last name: {{ current_user.last_name }}
+</div>
+
+<div>
+PGP public key:
+</div>
+
+{% if current_user.pgp_key %}
+<textarea readonly rows="40" cols="70">
+{{ current_user.pgp_key }}
+</textarea>
+
+{% else %}
+
+No PGP key set
+
+{% endif %}
+
+<div>
+<a href="{% url 'users:edit_profile' %}">Edit your profile</a> | <a href="{% url 'users:password_change' %}">Change your password</a>
+</div>
+
+{% endblock content %}

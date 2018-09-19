@@ -40,6 +40,7 @@ INSTALLED_APPS = [
 
     # My apps
     'imageapp',
+    'pmessaging',
     'users',
 ]
 
@@ -128,3 +129,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'img')
 MEDIA_URL = '/img/'
 
 LOGIN_URL = '/users/login/'
+
+AUTH_USER_MODEL = 'users.CustomUser'
+
+LOGIN_REDIRECT_URL = 'imageapp:index'
+
+LOGOUT_REDIRECT_URL = 'imageapp:index'
+

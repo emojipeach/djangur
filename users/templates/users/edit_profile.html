@@ -1,16 +1,17 @@
 {% extends "imageapp/base.html" %}
 
-{% block title %}Change password{% endblock %}
+{% block title %}Update profile{% endblock %}
 
 {% block content %}
 
-<h2>Change password</h2>
+<h2>Update profile</h2>
+
+{{ form.non_field_errors }}
 
 <form method="post">
   {% csrf_token %}
-  {{ form }}
+  {{ form.as_p }}
   <button type="submit">Save changes</button>
-  <input type="hidden" name="next" value="{% url 'imageapp:index' %}" />
 </form>
 
 {% endblock content %}
