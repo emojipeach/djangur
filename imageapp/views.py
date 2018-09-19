@@ -9,7 +9,7 @@ from time import time
 from uuid import uuid4
 
 from django.contrib import messages
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.http import HttpResponseRedirect
 from django.http import Http404
 from django.shortcuts import render
@@ -24,6 +24,9 @@ from imageapp.settings import MODERATION_THRESHOLD
 logging.basicConfig(
     level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s'
     )
+
+
+User = get_user_model()
 
 
 def index(request):
