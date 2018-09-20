@@ -2,44 +2,35 @@
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7e1b9453f54840ff8d219f170ce196b8)](https://www.codacy.com/app/emojipeach/djangur?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=emojipeach/djangur&amp;utm_campaign=Badge_Grade)
 
-Intended to be an open source privacy focussed image hosting script. Currently at an early stage.
+Intended to be an open source privacy focussed image hosting script. 
 
-### Implemented:
-* Basic upload form
-* Basic image view
-* Basic index with recent (non-private) images
-* Image filename unique and unguessable
+### Features:
+* Based on Django
+* Upload from local files or URLs
+* Private image option (Image will only displayed if full URL known and not linked anywhere else on the site)
+* Image filename unique and unguessable (based on UUID4)
 * EXIF stripping with orientation correction for jpegs
-* Make thumbnails
-* Image expiry with image delete script running hourly by default
-* 'Copy' buttons
-* Display filesize and expiry delta
-* Accepts animated gifs (thumbnail not animated currently)
-* Image privacy option
-* Added some upload form defaults
-* Added image deletion link and view with basic success template
-* Report image implemented
-* Mod queue implemented - needs protection with user login and mod group
-* Upload from URL
-* Image ownership and user accounts
-* Anon uploads
-* Image profile pages
-* Password change
+* Image expiry date can be specified with expired image cleanup script set to run hourly by default
+* Image deletion link displayed on first upload to anonymous users but not subsequently
+* Image deletion link available to logged in users when viewing their own files
+* Image reporting system
+* Moderation queue (create 'moderators' group and add a user to this to allow them to moderate)
+* User accounts and ability to edit their own data
+* Private messaging 
     
 ### Todo:
-* User settings page
 * Unittests
+* Private message deletion script
 
 ### Maybe:
 * Karma
 * Comments
-* Private messaging
 * Categories
 * Animate gif thumbnails 
 
 ### Deployment
-* Debug = False
-* Set secretkey
-* Delete users/make_admin url and view
+* set Debug = False
+* set secured secret key
 * makemigrations
 * migrate
+* create 'moderators' group
