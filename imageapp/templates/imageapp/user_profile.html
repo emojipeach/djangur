@@ -3,7 +3,9 @@
 {% block content %}
 
 <div>
+<h2>
 Images uploaded by {{ current_user.username }}
+</h2>
 </div>
 
 {% for image in images %}
@@ -11,11 +13,14 @@ Images uploaded by {{ current_user.username }}
 {% if request.user.id == current_user.id %}
 
 <div>
+<a href="{% url 'imageapp:settings' %}">Your user settings</a>
+</div>
+
+<div>
   <a href="{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}{% url 'imageapp:image' image.identifier %}">
   <img class="main-image" src="{{ image.image_file.url }}" alt="{{ image.title }}" >
   </a>
 </div>
-
 <br>
 
 {% elif image.private is False %}
