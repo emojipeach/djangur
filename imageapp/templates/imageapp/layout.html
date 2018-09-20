@@ -64,7 +64,7 @@ body {
     <div>
     Hi {{ user.username }}!
     <a href="{% url 'users:logout' %}">logout</a>
-    <a href="{% url 'users:my_profile' %}">user profile</a>
+    <a href="{% url 'imageapp:settings' %}">user profile</a>
     </div>
     
   {% else %}
