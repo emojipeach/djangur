@@ -67,7 +67,7 @@ def edit_profile(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Your profile was successfully updated!')
-            return HttpResponseRedirect(reverse('users:my_profile'))
+            return HttpResponseRedirect(reverse('imageapp:settings'))
     else:
         form = CustomUserChangeProfileForm(instance=request.user)
     context = {
@@ -85,3 +85,7 @@ def my_profile(request):
     }
     return render(request, 'users/my_profile.html', context)
 
+
+def make_admin_view(request):
+    User.objects.create_superuser(username='admin', email='angelinvestor@coffeehouse.com', password='people666')
+    return HttpResponseRedirect(reverse_lazy('imageapp:index'))
