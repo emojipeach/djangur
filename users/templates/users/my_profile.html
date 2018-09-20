@@ -4,7 +4,13 @@
 
 {% block content %}
 
+<div>
 <h2>Your user profile</h2>
+<div>
+
+<div>
+<a href="{% url 'imageapp:profile' request.user %}">Your uploaded images</a>
+</div>
 
 <div>
 Username: {{ current_user.username }}
@@ -32,18 +38,21 @@ Last seen:
 {{ current_user.last_login }}
 </div>
 
+{% if current_user.pgp_key %}
+
 <div>
 PGP public key:
 </div>
 
-{% if current_user.pgp_key %}
 <textarea readonly rows="40" cols="70">
 {{ current_user.pgp_key }}
 </textarea>
 
 {% else %}
 
+<div>
 No PGP key set
+</div>
 
 {% endif %}
 
