@@ -10,6 +10,8 @@ from uuid import uuid4
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import user_passes_test
 from django.http import HttpResponseRedirect
 from django.http import Http404
 from django.shortcuts import render
@@ -115,6 +117,7 @@ def delete_image(request, identifier, deletion_password=''):
         raise Http404("Page not found")
 
 
+@login_required
 def report_image(request, identifier):
     """ View that increments the image.reported count and adds a timestamp to be used for the mod_queue."""
     try:
@@ -132,6 +135,14 @@ def report_image(request, identifier):
     return HttpResponseRedirect(reverse('imageapp:image', args=[identifier]))
 
 
+def moderator_check(user):
+    if user.is_superuser:
+        return True
+    else:
+        return user.groups.filter(name__in=['moderators',]).exists()
+
+
+@user_passes_test(moderator_check)
 def mod_delete_image(request, identifier, deletion_password=''):
     """ View called from the mod_queue template which deletes an image and redirects back to the queue."""
     try:
@@ -151,6 +162,7 @@ def mod_delete_image(request, identifier, deletion_password=''):
         raise Http404("Page not found")
 
 
+@user_passes_test(moderator_check)
 def mod_image_acceptable(request, identifier, deletion_password=''):
     """ View which resets the image.reported counter."""
     try:
@@ -171,6 +183,7 @@ def mod_image_acceptable(request, identifier, deletion_password=''):
         raise Http404("Page not found")
 
 
+@user_passes_test(moderator_check)
 def mod_queue(request):
     """ View gets 10 images above moderation_threshold and sort by the first time they were reported."""
     images_for_moderation = ImageUpload.objects.filter(
