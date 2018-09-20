@@ -8,6 +8,10 @@
 {% if user.is_authenticated %}
 <ul class="subnavilist">
     <li><a href="{% url 'imageapp:profile' user.username %}">&raquo; Profile</a></li>
+    <li><a href="{% url 'imageapp:upload' %}">&raquo; Upload</a></li>
+    {% if user.is_staff %}
+    <li><a href="{% url 'imageapp:mod_queue' %}">&raquo; Mod queue</a></li>
+    {% endif %}
 </ul>
 {% endif %}
 
