@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 from django.urls import path
 
 from . import views
+from users.views import my_profile as settings
 
 app_name = 'imageapp'
 
@@ -58,7 +59,13 @@ urlpatterns = [
         views.mod_queue,
         name='mod_queue'
         ),
-    # User profile
+    # User settings
+    path(
+        'profile/settings/',
+        settings,
+        name='settings'
+        ),
+    # User images
     path(
         'profile/<str:username>/',
         views.profile,
