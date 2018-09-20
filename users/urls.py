@@ -37,11 +37,4 @@ urlpatterns = [
         views.edit_profile,
         name='edit_profile'
         ),
-    # user's own profile
-    path(
-        'profile/',
-        views.my_profile,
-        name='my_profile'
-        ),
 ]
-
