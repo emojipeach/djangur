@@ -20,12 +20,12 @@ Intended to be an open source privacy focussed image hosting script.
     
 ### Todo:
 * Unittests
-* Private message deletion script
+* Banned usernames (settings, admin, anonymous, profile)
 
 ### Maybe:
-* Karma
 * Comments
 * Categories
+* Voting
 * Animate gif thumbnails 
 
 ### Deployment
@@ -33,4 +33,5 @@ Intended to be an open source privacy focussed image hosting script.
 * set secured secret key
 * makemigrations
 * migrate
+* uncomment cleanup/startup imports in pmessaging.views and imageapp.views. This needs to be done after migrate is run.
 * create 'moderators' group
