@@ -1,192 +1,213 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
-import codecs
-import logging
-import os
-
-from time import time
-from uuid import uuid4
-
+from django.http import Http404
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
+from django.shortcuts import render
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.http import HttpResponseRedirect
-from django.http import Http404
-from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.utils.translation import ugettext as _
+from django.utils import timezone
 from django.urls import reverse
 
-from imageapp.forms import ImageUploadForm
-from imageapp.models import ImageUpload
-from imageapp.settings import MODERATION_COUNTER_RESET
-from imageapp.settings import MODERATION_THRESHOLD
-# from imageapp.startup import delete_expired_images
-
-logging.basicConfig(
-    level=logging.DEBUG, format=' %(asctime)s - %(levelname)s - %(message)s'
-    )
-
+# from pmessaging.cleanup import launch_old_message_remover
+from pmessaging.models import Message
+from pmessaging.forms import ComposeForm
+from pmessaging.utils import format_quote
+from pmessaging.utils import get_username_field
 
 User = get_user_model()
 
+@login_required
+def inbox(request, template_name='pmessaging/inbox.html'):
+    """
+    Displays a list of received messages for the current user.
+    Optional Arguments:
+        ``template_name``: name of the template to use.
+    """
+    message_list = Message.objects.inbox_for(request.user)
+    return render(request, template_name, {
+        'message_list': message_list,
+    })
 
-def index(request):
-    """ Default index view which displays some recent images."""
-    images = ImageUpload.objects.filter(private=False).order_by('-uploaded_time')[:5]
-    context = {'images': images}
-    return render(request, 'imageapp/index.html', context)
+@login_required
+def outbox(request, template_name='pmessaging/outbox.html'):
+    """
+    Displays a list of sent messages by the current user.
+    Optional arguments:
+        ``template_name``: name of the template to use.
+    """
+    message_list = Message.objects.outbox_for(request.user)
+    return render(request, template_name, {
+        'message_list': message_list,
+    })
 
+@login_required
+def trash(request, template_name='pmessaging/trash.html'):
+    """
+    Displays a list of deleted messages.
+    Optional arguments:
+        ``template_name``: name of the template to use
+    Hint: A Cron-Job could periodicly clean up old messages, which are deleted
+    by sender and recipient.
+    """
+    message_list = Message.objects.trash_for(request.user)
+    return render(request, template_name, {
+        'message_list': message_list,
+    })
 
-def upload(request):
-    """ View for the image upload form."""
-    if request.method == 'POST':
-        form = ImageUploadForm(request.POST, request.FILES)
+@login_required
+def compose(request, recipient=None, form_class=ComposeForm,
+        template_name='pmessaging/compose.html', success_url=None, recipient_filter=None):
+    """
+    Displays and handles the ``form_class`` form to compose new messages.
+    Required Arguments: None
+    Optional Arguments:
+        ``recipient``: username of a `django.contrib.auth` User, who should
+                       receive the message, optionally multiple usernames
+                       could be separated by a '+'
+        ``form_class``: the form-class to use
+        ``template_name``: the template to use
+        ``success_url``: where to redirect after successfull submission
+    """
+    if request.method == "POST":
+        form = form_class(request.POST, recipient_filter=recipient_filter)
         if form.is_valid():
-            new_image = form.save(commit=False)
-            new_image.identifier = uuid4().hex
-            new_image.uploaded_time = time()
-            new_image.expiry_time = new_image.get_expiry_time()
-            if request.user.is_authenticated:
-                new_image.owner = request.user
-            new_image.save()
-            context = {
-                'current_image': new_image,
-                'attempted_upload_success_password': new_image.upload_success_password(),
-            }
-            return render(request, 'imageapp/image.html', context)
-    else:  # Blank form initially
-        form = ImageUploadForm()
-    context = {
+            form.save(sender=request.user)
+            messages.info(request, _(u"Message successfully sent."))
+            if success_url is None:
+                success_url = reverse('messages_inbox')
+            if 'next' in request.GET:
+                success_url = request.GET['next']
+            return HttpResponseRedirect(success_url)
+    else:
+        form = form_class()
+        if recipient is not None:
+            recipients = [u for u in User.objects.filter(**{'%s__in' % get_username_field(): [r.strip() for r in recipient.split('+')]})]
+            form.fields['recipient'].initial = recipients
+    return render(request, template_name, {
         'form': form,
-    }
-    return render(request, 'imageapp/upload.html', context)
+    })
 
+@login_required
+def reply(request, message_id, form_class=ComposeForm,
+        template_name='pmessaging/compose.html', success_url=None,
+        recipient_filter=None, quote_helper=format_quote,
+        subject_template=_(u"Re: %(subject)s"),):
+    """
+    Prepares the ``form_class`` form for writing a reply to a given message
+    (specified via ``message_id``). Uses the ``format_quote`` helper from
+    ``messages.utils`` to pre-format the quote. To change the quote format
+    assign a different ``quote_helper`` kwarg in your url-conf.
+    """
+    parent = get_object_or_404(Message, id=message_id)
 
-def image(request, identifier):
-    """ View which displays an image referenced by the identifier."""
-    try:
-        current_image = ImageUpload.objects.get(identifier=identifier)
-    except Exception:
-        raise Http404("Page not found")
-    # Lets check if the image.reported field exceeds the moderation threshold
-    if current_image.reported >= MODERATION_THRESHOLD:
+    if parent.sender != request.user and parent.recipient != request.user:
+        raise Http404
 
-        messages.error(request, 'Image ({0}) awaiting moderation.'.format(identifier))
-
-        return HttpResponseRedirect(reverse('imageapp:index'))
-    # Lets check if the image has expired and is awaiting deletion
-    if current_image.expiry_time < time() and current_image.expiry_time > current_image.uploaded_time:
-        raise Http404("Page not found")
-
-    context = {
-        'current_image': current_image,
-    }
-    return render(request, 'imageapp/image.html', context)
-
-
-def profile(request, username):
-    """ Displays a user's profile."""
-    current_user = User.objects.get(username=username)
-    user_id = current_user.id
-    images = ImageUpload.objects.filter(owner=user_id).order_by('-uploaded_time')
-    context = {
-        'images': images,
-        'current_user': current_user,
-        }
-    return render(request, 'imageapp/user_profile.html', context)
-
-
-def delete_image(request, identifier, deletion_password=''):
-    """ View to delete an image, a correct deletion password must be passed in the url."""
-    try:
-        current_image = ImageUpload.objects.get(identifier=identifier)
-    except Exception:
-        raise Http404("Page not found")
-    # Lets check the deletion password is correct
-    if deletion_password == current_image.deletion_password():
-        # If so we need to delete the instance and all associated files
-        os.remove(current_image.image_file.path)
-        os.remove(current_image.thumbnail.path)
-        current_image.delete()
-
-        messages.success(request, 'Image ({0}) deleted.'.format(identifier))
-
-        return HttpResponseRedirect(reverse('imageapp:index'))
+    if request.method == "POST":
+        form = form_class(request.POST, recipient_filter=recipient_filter)
+        if form.is_valid():
+            form.save(sender=request.user, parent_msg=parent)
+            messages.info(request, _(u"Message successfully sent."))
+            if success_url is None:
+                success_url = reverse('messages_inbox')
+            return HttpResponseRedirect(success_url)
     else:
-        raise Http404("Page not found")
+        form = form_class(initial={
+            'body': quote_helper(parent.sender, parent.body),
+            'subject': subject_template % {'subject': parent.subject},
+            'recipient': [parent.sender,]
+            })
+    return render(request, template_name, {
+        'form': form,
+    })
 
+@login_required
+def delete(request, message_id, success_url=None):
+    """
+    Marks a message as deleted by sender or recipient. The message is not
+    really removed from the database, because two users must delete a message
+    before it's save to remove it completely.
+    A cron-job should prune the database and remove old messages which are
+    deleted by both users.
+    As a side effect, this makes it easy to implement a trash with undelete.
+    You can pass ?next=/foo/bar/ via the url to redirect the user to a different
+    page (e.g. `/foo/bar/`) than ``success_url`` after deletion of the message.
+    """
+    user = request.user
+    now = timezone.now()
+    message = get_object_or_404(Message, id=message_id)
+    deleted = False
+    if success_url is None:
+        success_url = reverse('messages_inbox')
+    if 'next' in request.GET:
+        success_url = request.GET['next']
+    if message.sender == user:
+        message.sender_deleted_at = now
+        deleted = True
+    if message.recipient == user:
+        message.recipient_deleted_at = now
+        deleted = True
+    if deleted:
+        message.save()
+        messages.info(request, _(u"Message successfully moved to trash."))
+        return HttpResponseRedirect(success_url)
+    raise Http404
 
-def report_image(request, identifier):
-    """ View that increments the image.reported count and adds a timestamp to be used for the mod_queue."""
-    try:
-        current_image = ImageUpload.objects.get(identifier=identifier)
-    except Exception:
-        raise Http404("Page not found")
-    # TODO should add some session checking to limt multiple reports
-    current_image.reported += 1
-    if current_image.reported_first_time == 0:
-        current_image.reported_first_time = time()
-    current_image.save(update_fields=['reported', 'reported_first_time'])
+@login_required
+def undelete(request, message_id, success_url=None):
+    """
+    Recovers a message from trash. This is achieved by removing the
+    ``(sender|recipient)_deleted_at`` from the model.
+    """
+    user = request.user
+    message = get_object_or_404(Message, id=message_id)
+    undeleted = False
+    if success_url is None:
+        success_url = reverse('messages_inbox')
+    if 'next' in request.GET:
+        success_url = request.GET['next']
+    if message.sender == user:
+        message.sender_deleted_at = None
+        undeleted = True
+    if message.recipient == user:
+        message.recipient_deleted_at = None
+        undeleted = True
+    if undeleted:
+        message.save()
+        messages.info(request, _(u"Message successfully recovered."))
+        return HttpResponseRedirect(success_url)
+    raise Http404
 
-    messages.success(request, 'Image ({0}) reported.'.format(identifier))
+@login_required
+def view(request, message_id, form_class=ComposeForm, quote_helper=format_quote,
+        subject_template=_(u"Re: %(subject)s"),
+        template_name='pmessaging/view.html'):
+    """
+    Shows a single message.``message_id`` argument is required.
+    The user is only allowed to see the message, if he is either
+    the sender or the recipient. If the user is not allowed a 404
+    is raised.
+    If the user is the recipient and the message is unread
+    ``read_at`` is set to the current datetime.
+    If the user is the recipient a reply form will be added to the
+    tenplate context, otherwise 'reply_form' will be None.
+    """
+    user = request.user
+    now = timezone.now()
+    message = get_object_or_404(Message, id=message_id)
+    if (message.sender != user) and (message.recipient != user):
+        raise Http404
+    if message.read_at is None and message.recipient == user:
+        message.read_at = now
+        message.save()
 
-    return HttpResponseRedirect(reverse('imageapp:image', args=[identifier]))
-
-
-def mod_delete_image(request, identifier, deletion_password=''):
-    """ View called from the mod_queue template which deletes an image and redirects back to the queue."""
-    try:
-        current_image = ImageUpload.objects.get(identifier=identifier)
-    except Exception:
-        raise Http404("Page not found")
-
-    if deletion_password == current_image.deletion_password():
-        os.remove(current_image.image_file.path)
-        os.remove(current_image.thumbnail.path)
-        current_image.delete()
-
-        messages.success(request, 'Previous image ({0}) deleted.'.format(identifier))
-
-        return HttpResponseRedirect(reverse('imageapp:mod_queue'))
-    else:
-        raise Http404("Page not found")
-
-
-def mod_image_acceptable(request, identifier, deletion_password=''):
-    """ View which resets the image.reported counter."""
-    try:
-        current_image = ImageUpload.objects.get(identifier=identifier)
-    except Exception:
-        raise Http404("Page not found")
-
-    if deletion_password == current_image.deletion_password():
-        current_image.reported = -MODERATION_COUNTER_RESET
-        current_image.reported_first_time = 0
-        current_image.save(update_fields=['reported', 'reported_first_time'])
-        # TODO attribute this action to the mod responsible
-
-        messages.success(request, 'Previous image ({0}) acceptable.'.format(identifier))
-
-        return HttpResponseRedirect(reverse('imageapp:mod_queue'))
-    else:
-        raise Http404("Page not found")
-
-
-def mod_queue(request):
-    """ View gets 10 images above moderation_threshold and sort by the first time they were reported."""
-    images_for_moderation = ImageUpload.objects.filter(
-        reported__gte=MODERATION_THRESHOLD
-        ).order_by('-reported_first_time')[:10]
-    # Lets pick a random image from this list to show to moderator
-    try:
-        pick_an_image = int(int(codecs.encode(os.urandom(1), 'hex'), 16) / 255 * len(images_for_moderation))
-        # Random number upto len(i_for_m)
-        moderate = images_for_moderation[pick_an_image]
-    except (ValueError, IndexError):
-        messages.error(request, 'Moderation queue empty')
-
-        return HttpResponseRedirect(reverse('imageapp:index'))
-
-    context = {
-        'moderate': moderate
-    }
-    return render(request, 'imageapp/mod_queue.html', context)
+    context = {'message': message, 'reply_form': True}
+    if message.recipient == user:
+        form = form_class(initial={
+            'body': quote_helper(message.sender, message.body),
+            'subject': subject_template % {'subject': message.subject},
+            'recipient': [message.sender,]
+            })
+        context['reply_form'] = form
+    return render(request, template_name, context)
