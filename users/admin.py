@@ -14,11 +14,11 @@ class CustomUserAdmin(UserAdmin):
     list_display = ['username']
     fieldsets = (
         (None, {
-            'fields': ('username', 'email', 'first_name', 'last_name', 'groups', 'pgp_key')
+            'fields': ('username', 'email', 'first_name', 'last_name', 'groups', 'pgp_key', 'is_active', )
         }),
         ('Advanced options', {
             'classes': ('collapse',),
-            'fields': ('password',),
+            'fields': ('password', 'is_staff', 'is_superuser', ),
         }),
     )
 
